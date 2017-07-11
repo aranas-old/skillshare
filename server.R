@@ -4,44 +4,64 @@ library(googlesheets)
 library(RColorBrewer)
 library(igraph)
 library(plotly)
-library(visNetwork) # require(visNetwork, quietly = TRUE) 
+#require(shiny)
+require(visNetwork, quietly = TRUE) # library(visNetwork) 
 
 # data: edge matrix
 key <-extract_key_from_url('https://docs.google.com/spreadsheets/d/1zsG-2R8CMXYjUKd4Cx_EzvIelFR7nGHp4ixSuuvdy7g/pubhtml?gid=572166108&single=true')
 gap <- key %>% gs_key()
-data <- gap %>% gs_read(ws = "examplar")
+data <- gap %>% gs_read(ws = "data_form")
 data <- within(data,  Fullname <- paste(First_Name, Last_Name, sep=" "))  # new var "Fullname" so as to keep First+Last name separate
 
 #find pairs of people where skills match needs and create new table with one row per pair (with repetitions)
 df_pairs <- data.frame()
 nodes <- data.frame()
-# skills_all <- character() skills_frequency <- character()
-skills_sort <- character()
-needs_sort <- character()
+
+skills <- c()  # or create unified data frame that contains skills and times seen
+skill_frequency <- c()
+needs <- c()
+needs_frequency <- c()
+skills_sort <- c()
 for (name in sort(unique(data$Fullname))) {
   combined <- 0
   indname <- which(data$Fullname %in% name)
   currentskill <- unlist(strsplit(data$Skills[indname],","))
   currentneed <- unlist(strsplit(data$Needs[indname],","))
-  if (length(unique(currentskill))==1) {currentskill <- unique(currentskill)} 
-  for (nskill in currentskill){
-    skills_sort <- rbind(skills_sort,nskill)
+  #if (length(unique(currentskill))==1) {currentskill <- unique(currentskill)} 
+  for (nskill in currentskill[!is.na(currentskill)]){
+    skills_sort <- rbind(skills_sort,nskill)  # only temporarily here, will remove
+    if (is.null(skills) || length(grep(nskill, skills, ignore.case = TRUE))==0){
+      skills <- c(skills,nskill)
+      skill_frequency <- c(skill_frequency,1)
+    } else { #  w/o lowercasing, the skills could contain both Yoga and yoga. We are only adding the first encounter and increasing the frequency each time.
+      skill_idx = grep(nskill, skills, ignore.case = TRUE)
+      skill_frequency[skill_idx] <- c(skill_frequency[skill_idx],1)
+    }
     to_ind <- grepl(paste("^",nskill,"$", sep=""),data$Needs, ignore.case=TRUE)  # no need to lowercase, we can have a case-insensitive match. And ^nskill$ is a regular expression that looks for word boundaries
     to <- data$Fullname[to_ind]
     from <- rep(name,length(to))
     title <- nskill
-    if (length(to)!=0) {combined <- rbind(from,to,title)
-    df_pairs <- rbind(df_pairs,as.data.frame(t(combined)))
+    if (length(to)!=0) {
+        combined <- rbind(from,to,title)
+        df_pairs <- rbind(df_pairs,as.data.frame(t(combined)))
     }
-  for (need in currentneed){
-    needs_sort <- rbind(needs_sort,need)
   }
+  for (need in currentneed[!is.na(currentneed)]){
+    if (is.null(needs) || length(grep(need, needs, ignore.case=TRUE))==0){
+      needs <- c(needs,need)
+      needs_frequency <- c(needs_frequency,1)
+    } else {
+      need_idx = grep(need, needs, ignore.case = TRUE)
+      needs_frequency[need_idx] <- c(needs_frequency[need_idx],1)
+    }
+    #needs_sort <- rbind(needs_sort,need)
   }
-  nodes <- rbind(nodes,data.frame(id = name, 
-                                  Skills = paste(unique(currentskill), collapse = ",") ,
-                                  Needs = paste(unique(data$Needs[indname]), collapse = ","),
-                                  Department = paste(unique(data$Department[indname]), collapse = ",")))
+  nodes <- rbind(nodes,data.frame(id = name,
+                                  Skills = paste(currentskill, collapse = ", ") ,
+                                  Needs = paste(data$Needs[indname], collapse = ", "),
+                                  Department = paste(data$Department[indname], collapse = ", ")))
 }
+
 df_pairs$title <- as.character(df_pairs$title)
 df_pairs      <-  df_pairs[order(df_pairs$title),]
 df_pairs$title <- as.factor(df_pairs$title)
@@ -63,9 +83,10 @@ nodes$size <- nodes$Connections # Node size
 nodes$borderWidth <- 2 # Node border width
 nodes$font.size <- 0
 
-palet = colorRampPalette(brewer.pal(length(unique(skills_sort)),"Pastel1"))
-skills_sort <- skills_sort[!is.na(skills_sort)]  # we should remove the NAs from the start, this is a temp hack
-colors = data.frame(skills = sort(unique(skills_sort)), colors = c(color = palet(length(unique(skills_sort)))))
+palet = colorRampPalette(brewer.pal(length(skills),"Pastel1"))
+#skills_sort <- skills_sort[!is.na(skills_sort)]  # we should remove the NAs from the start, this is a temp hack
+#colors = data.frame(skills = sort(unique(skills_sort)), colors = c(color = palet(length(unique(skills_sort)))))
+colors = data.frame(skills = sort(skills), colors = c(color = palet(length(skills))))
 
 nodes$color.background <- "#4bd8c1"
 nodes$color.border <- "#42b2a0"
@@ -100,6 +121,7 @@ function(input, output, session) {
       )
   })
   
+  #TODO: Need to plot frequencies according to skill_frequency now
   output$piePlot1 <- renderPlotly({
     skills_sort <- sort(skills_sort)
     tmpdata <-as.data.frame(table(skills_sort))
@@ -120,7 +142,7 @@ function(input, output, session) {
              yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
   })
   
-  
+  # TODO: Need to plot needs according to needs_frequency
   output$piePlot2 <- renderPlotly({
     tmpdata <-as.data.frame(table(needs_sort))
     rownames(tmpdata) = tmpdata$needs_sort
@@ -157,7 +179,7 @@ function(input, output, session) {
   output$data_individual <- renderUI({ 
     if (!is.null(input$current_node_id)) {
       str1 <- paste(input$current_node_id," ",unique(data$Last_Name[data$Fullname == input$current_node_id]),",",unique(info$Department[info$id == input$current_node_id]))
-      str2 <- paste(unique(info$Email[info$id == input$current_node_id]))
+      str2 <- paste(unique(info$Email[info$id == input$current_node_id]))  # @Sophie: why unique here?
       str3 <- paste("My Skills:   ",unique(info$Skills[info$id == input$current_node_id]))
       str4 <- paste(unique(data$Skills_details[data$Fullname == input$current_node_id]))
       str5 <- paste("My Needs:    ",unique(info$Needs[info$id == input$current_node_id]))
