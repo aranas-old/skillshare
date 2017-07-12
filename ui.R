@@ -2,7 +2,9 @@ library(googlesheets)
 #library(RColorBrewer)
 library(igraph)
 library(plotly)
-library(visNetwork)
+#library(visNetwork)
+#rurequire(shiny)
+require(visNetwork, quietly = TRUE) # library(visNetwork) 
 
 # data: edge matrix
 key <-extract_key_from_url('https://docs.google.com/spreadsheets/d/1zsG-2R8CMXYjUKd4Cx_EzvIelFR7nGHp4ixSuuvdy7g/pubhtml?gid=572166108&single=true')
@@ -13,34 +15,69 @@ data <- within(data,  Fullname <- paste(First_Name, Last_Name, sep=" "))  # new 
 #find pairs of people where skills match needs and create new table with one row per pair (with repetitions)
 df_pairs <- data.frame()
 nodes <- data.frame()
-skills_sort <- character()
-needs_sort <- character()
+
+# returns string w/o leading or trailing whitespace
+trim <- function (x) gsub("^\\s+|\\s+$", "", x)
+uppercase_first <- function(x){
+  substr(x, 1, 1) <- toupper(substr(x, 1, 1))
+  x
+}
+string_to_list <- function(x){trim(unlist(strsplit(x,",")))}
+
+skills <- c()  # or create unified data frame that contains skills and times seen
+skill_frequency <- c()
+needs <- c()
+needs_frequency <- c()
+
 for (name in sort(unique(data$Fullname))) {
+  print(name)
   combined <- 0
   indname <- which(data$Fullname %in% name)
-  currentskill <- unlist(strsplit(data$Skills[indname],","))
-  currentneed <- unlist(strsplit(data$Needs[indname],","))
-  if (length(unique(currentskill))==1) {currentskill <- unique(currentskill)} 
-  for (nskill in currentskill){
-    skills_sort <- rbind(skills_sort,nskill)
-    to_ind <- grepl(paste("^",nskill,"$", sep=""),data$Needs, ignore.case=TRUE)  # no need to lowercase, we can have a case-insensitive match. And ^nskill$ is a regular expression that looks for word boundaries ("R" doesn't match "spoRts" anymore)
-    # TODO: W/o lowercasing, the skills contain both Yoga and yoga. Will do grep(nskill, skills_sort, ignore.case = TRUE) to see whether skill already exists and if so increase only frequency w/o adding it to the list
+  currentskill <- uppercase_first(string_to_list(data$Skills[indname]))   # we can uppercase the first letter, it's only for aesthetics 
+  currentneed <- uppercase_first(string_to_list((data$Needs[indname])))  # @Sophie: if there is an issue with unique() we should resolve it here, not at the node
+  for (nskill in currentskill[!is.na(currentskill)]){  # ignore NAs
+    if (is.null(skills) || length(grep(nskill, skills, ignore.case=TRUE))==0){
+        skills <- c(skills,nskill)
+        skill_frequency <- c(skill_frequency,1)
+    } else { #  w/o lowercasing, the skills could contain both Yoga and yoga. We are only adding the first encounter and increasing the frequency each time.
+        skill_idx = grep(nskill, skills, ignore.case = TRUE)
+        skill_frequency[skill_idx] <- skill_frequency[skill_idx] + 1
+    }
+    to_ind <- grepl(paste("^",nskill,"$", sep=""),data$Needs, ignore.case=TRUE)  # no need to lowercase, we can have a case-insensitive match. ^nskill$ is a regular expression that looks for word boundaries ("R" doesn't match "spoRts" anymore)
     to <- data$Fullname[to_ind]
     from <- rep(name,length(to))
     title <- nskill
-    if (length(to)!=0) {combined <- rbind(from,to,title)
-    df_pairs <- rbind(df_pairs,as.data.frame(t(combined)))
+    if (length(to)!=0) {  # @Sophie: so this is for the case where there are multiple links?
+        combined <- rbind(from,to,title)
+        df_pairs <- rbind(df_pairs,as.data.frame(t(combined)))
     }
-    for (need in currentneed){
-      needs_sort <- rbind(needs_sort,need)
-    }
+    # if we leave this loop inside the "for (nskill in currentskill)" one, we won't parse cases that have needs but no skills. Is this what you wanted? I'm moving it out for now.
+    #for (need in currentneed){
+    #  needs_sort <- rbind(needs_sort,need)
+    #}
   }
-  nodes <- rbind(nodes,data.frame(id = name, 
-                                  Skills = paste(unique(currentskill), collapse = ",") ,
-                                  Needs = paste(unique(data$Needs[indname]), collapse = ","),
-                                  Department = paste(unique(data$Department[indname]), collapse = ",")))
+  
+  for (need in currentneed[!is.na(currentneed)]){
+    if (is.null(needs) || length(grep(need, needs, ignore.case = TRUE))==0){
+      needs <- c(needs,need)
+      needs_frequency <- c(needs_frequency,1)
+    } else {
+      need_idx = grep(need, needs, ignore.case = TRUE)
+      needs_frequency[need_idx] <- needs_frequency[need_idx] + 1
+    }
+    #needs_sort <- rbind(needs_sort,need)
+  }
+  nodes <- rbind(nodes,data.frame(id = name,
+                                  Skills = paste(currentskill, collapse = ", ") ,
+                                  Needs = paste(data$Needs[indname], collapse = ", "),
+                                  Department = paste(data$Department[indname], collapse = ", ")))
+  # nodes <- rbind(nodes,data.frame(id = name, 
+  #                                 Skills = paste(unique(currentskill), collapse = ",") ,
+  #                                 Needs = paste(unique(data$Needs[indname]), collapse = ","),
+  #                                 Department = paste(unique(data$Department[indname]), collapse = ",")))
 }
-
+print(skills)
+print(skill_frequency)
 #ui.R
 
 shinyUI(fluidPage(titlePanel(title=div(img(src="images/MPI_logo.png"),"Skillshare Database")),
@@ -75,8 +112,8 @@ shinyUI(fluidPage(titlePanel(title=div(img(src="images/MPI_logo.png"),"Skillshar
            helpText('Click on one of the dot to get more details about individual: '), 
            htmlOutput("data_individual")),
     column(8,
-           selectInput(inputId = "selskill", label = "Select person according to Skills", choices = skills_sort, multiple = TRUE),
-           selectInput(inputId = "selneed", label = "Select person according to Needs", choices = needs_sort, multiple = TRUE))
+           selectInput(inputId = "selskill", label = "Select person according to Skills", choices = skills, multiple = TRUE),
+           selectInput(inputId = "selneed", label = "Select person according to Needs", choices = needs, multiple = TRUE))
     # textInput("text", label = h3("Name query"), value = "Search for name...")
   ),
   fluidRow(
