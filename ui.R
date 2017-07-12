@@ -9,12 +9,20 @@ require(visNetwork, quietly = TRUE) # library(visNetwork)
 # data: edge matrix
 key <-extract_key_from_url('https://docs.google.com/spreadsheets/d/1zsG-2R8CMXYjUKd4Cx_EzvIelFR7nGHp4ixSuuvdy7g/pubhtml?gid=572166108&single=true')
 gap <- key %>% gs_key()
-data <- gap %>% gs_read(ws = "data_form")
+data <- gap %>% gs_read(ws = "examplar")
 data <- within(data,  Fullname <- paste(First_Name, Last_Name, sep=" "))  # new var "Fullname" so as to keep First+Last name separate
 
 #find pairs of people where skills match needs and create new table with one row per pair (with repetitions)
 df_pairs <- data.frame()
 nodes <- data.frame()
+
+# returns string w/o leading or trailing whitespace
+trim <- function (x) gsub("^\\s+|\\s+$", "", x)
+uppercase_first <- function(x){
+  substr(x, 1, 1) <- toupper(substr(x, 1, 1))
+  x
+}
+string_to_list <- function(x){trim(unlist(strsplit(x,",")))}
 
 skills <- c()  # or create unified data frame that contains skills and times seen
 skill_frequency <- c()
@@ -25,15 +33,15 @@ for (name in sort(unique(data$Fullname))) {
   print(name)
   combined <- 0
   indname <- which(data$Fullname %in% name)
-  currentskill <- unlist(strsplit(data$Skills[indname],","))  # if there is an issue with uniqueness we should resolve it here, not at the node
-  currentneed <- unlist(strsplit(data$Needs[indname],","))  # TODO: Check if there's an issue with potential white spaces between skills/needs after strsplit
+  currentskill <- uppercase_first(string_to_list(data$Skills[indname]))   # we can uppercase the first letter, it's only for aesthetics 
+  currentneed <- uppercase_first(string_to_list((data$Needs[indname])))  # @Sophie: if there is an issue with unique() we should resolve it here, not at the node
   for (nskill in currentskill[!is.na(currentskill)]){  # ignore NAs
     if (is.null(skills) || length(grep(nskill, skills, ignore.case=TRUE))==0){
         skills <- c(skills,nskill)
         skill_frequency <- c(skill_frequency,1)
     } else { #  w/o lowercasing, the skills could contain both Yoga and yoga. We are only adding the first encounter and increasing the frequency each time.
         skill_idx = grep(nskill, skills, ignore.case = TRUE)
-        skill_frequency[skill_idx] <- c(skill_frequency[skill_idx],1)
+        skill_frequency[skill_idx] <- skill_frequency[skill_idx] + 1
     }
     to_ind <- grepl(paste("^",nskill,"$", sep=""),data$Needs, ignore.case=TRUE)  # no need to lowercase, we can have a case-insensitive match. ^nskill$ is a regular expression that looks for word boundaries ("R" doesn't match "spoRts" anymore)
     to <- data$Fullname[to_ind]
@@ -55,7 +63,7 @@ for (name in sort(unique(data$Fullname))) {
       needs_frequency <- c(needs_frequency,1)
     } else {
       need_idx = grep(need, needs, ignore.case = TRUE)
-      needs_frequency[need_idx] <- c(needs_frequency[need_idx],1)
+      needs_frequency[need_idx] <- needs_frequency[need_idx] + 1
     }
     #needs_sort <- rbind(needs_sort,need)
   }
