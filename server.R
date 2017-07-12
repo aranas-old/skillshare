@@ -103,7 +103,7 @@ df_pairs$smooth <- TRUE    # should the edges be curved?
 df_pairs$shadow <- FALSE    # edge shadow
 df_pairs$width <- 5    # edge shadow
 # server.R
-Logged = TRUE;
+Logged = TRUE; # TEMP, removed password procedure for debugging purposes
 PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd7b43ff48")
 
 function(input, output, session) {
