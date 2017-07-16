@@ -1,7 +1,9 @@
 
 #ui.R
 
-shinyUI(fluidPage(titlePanel(title=div(img(src="images/MPI_logo.png"),"Skillshare Database")),
+shinyUI(fluidPage(
+  useShinyjs(),  # Include shinyjs
+  titlePanel(title=div(img(src="images/MPI_logo.png"),"Skillshare Database")),
   fluidRow(
     column(6,
            tagList(

@@ -6,6 +6,7 @@ library(plotly)
 #require(shiny)
 require(visNetwork, quietly = TRUE) # library(visNetwork) 
 library(DT)
+library(shinyjs)
 
 ### Set variables #####
 fields <- c("First_Name","Last_Name","email","Skill","Skill_detail","Need","Need_detail","Department")
@@ -34,9 +35,9 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
           datain
         })
         # Only activate Submit button when name and email is proided
-       # observe({
-        #  shinyjs::toggleState("submit", !is.null(input$First_Name) && input$First_Name != "" && !is.null(input$email) && input$email != "")
-      #  })
+        observe({
+          shinyjs::toggleState("submit", !is.null(input$First_Name) && input$First_Name != "" && !is.null(input$email) && input$email != "")
+        })
         
         # When the Submit button is clicked, save the form data
         observeEvent(input$submit, {
