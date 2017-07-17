@@ -32,18 +32,31 @@ shinyUI(fluidPage(
                     actionButton("BUTadd", "Add Data"),
                     #pop-up when "Add Data" is clicked
                     bsModal("modaladd", "Add data", "BUTadd", size = "small",
-                    HTML("Please fill in this form and press submit in order to add your data"),
-                    textInput("First_Name", "First Name", ""),
-                    textInput("Last_Name", "Last Name", ""),
-                    textInput("email", "email", ""),
-                    textInput("Skill", "Skill", ""),
-                    textInput("Skill_detail", "Skill in detail", ""),
-                    textInput("Need", "Need", ""),
-                    textInput("Need_detail", "Need in detail", ""),
-                    textInput("Department", "Department", ""),
-                    actionButton("submit", "Submit"))
-)
-
+                      HTML("Please fill in this form and press submit in order to add your data"),
+                      textInput("First_Name", "First Name", ""),
+                      textInput("Last_Name", "Last Name", ""),
+                      textInput("email", "email", ""),
+                      textInput("Skill", "Skill", ""),
+                      textInput("Skill_detail", "Skill in detail", ""),
+                      textInput("Need", "Need", ""),
+                      textInput("Need_detail", "Need in detail", ""),
+                      textInput("Department", "Department", ""),
+                      actionButton("submit", "Submit")),
+                    #pop-up when "Edit Data" is clicked
+                    actionButton("BUTedit", "Edit Data"),
+                    bsModal("modaledit", "Edit data", "BUTedit", size = "small",
+                      HTML("Please fill in your last name and select your full name out of the options:"),
+                      textInput("Last_Name", "Last Name", ""),
+                      actionButton("BUTsubmit", "Submit"),
+                      bsModal("modaledit2", "Edit your data", "BUTsubmit", size = "small",
+                              HTML("Please update your information:"),
+                              textInput("New skill", "New Skill", ""),
+                              textInput("Skill_detail", "Skill in detail", ""),
+                              textInput("New need", "New Need", ""),
+                              textInput("Need_detail", "Need in detail", ""),
+                              actionButton("submit", "Submit"))
+                      )
+              )
     ))
   ),
   fluidRow(
