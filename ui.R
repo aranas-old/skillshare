@@ -1,6 +1,6 @@
 
 #ui.R
-
+# hallo
 shinyUI(fluidPage(
   useShinyjs(),  # Include shinyjs
   titlePanel(title=div(img(src="images/MPI_logo.png"),"Skillshare Database")),
