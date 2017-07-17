@@ -29,6 +29,10 @@ shinyUI(fluidPage(
                     plotlyOutput("piePlot1"),
                     plotlyOutput("piePlot2"))),
            tabPanel("Form",
+                    actionButton("BUTadd", "Add Data"),
+                    #pop-up when "Add Data" is clicked
+                    bsModal("modaladd", "Add data", "BUTadd", size = "small",
+                    HTML("Please fill in this form and press submit in order to add your data"),
                     textInput("First_Name", "First Name", ""),
                     textInput("Last_Name", "Last Name", ""),
                     textInput("email", "email", ""),
@@ -38,6 +42,8 @@ shinyUI(fluidPage(
                     textInput("Need_detail", "Need in detail", ""),
                     textInput("Department", "Department", ""),
                     actionButton("submit", "Submit"))
+)
+
     ))
   ),
   fluidRow(
