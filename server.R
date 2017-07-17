@@ -34,7 +34,7 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
           datain <- datain[c(9,1,2,3,4,5,6,7,8)] #putting timestamp at the beginning - must be an easier way to do this?
           datain
         })
-        # Only activate Submit button when name and email is proided
+        # Only activate Submit button when name and email is provided
         observe({
           shinyjs::toggleState("submit", !is.null(input$First_Name) && input$First_Name != "" && !is.null(input$email) && input$email != "")
         })
