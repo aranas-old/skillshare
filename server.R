@@ -7,6 +7,7 @@ library(plotly)
 require(visNetwork, quietly = TRUE) # library(visNetwork) 
 library(DT)
 library(shinyjs)
+library(shinyBS)
 
 ### Set variables #####
 fields <- c("First_Name","Last_Name","email","Skill","Skill_detail","Need","Need_detail","Department")
@@ -43,6 +44,8 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
         observeEvent(input$submit, {
           #when submit is pressed close pop-up window
           toggleModal(session, "modaladd", toggle = "close")
+          toggleModal(session, "modaledit", toggle = "close")
+          toggleModal(session, "modaledit2", toggle = "close")
           saveData(formData()) 
         })
         
