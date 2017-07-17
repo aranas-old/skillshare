@@ -41,6 +41,8 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
         
         # When the Submit button is clicked, save the form data
         observeEvent(input$submit, {
+          #when submit is pressed close pop-up window
+          toggleModal(session, "modaladd", toggle = "close")
           saveData(formData()) 
         })
         
