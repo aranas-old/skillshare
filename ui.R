@@ -1,4 +1,3 @@
-
 #ui.R
 # hallo
 shinyUI(fluidPage(
@@ -64,5 +63,5 @@ shinyUI(fluidPage(
            helpText('Click on one of the dot to get more details about individual: '), 
            htmlOutput("data_individual"))
   )
-)
+  )
 )
