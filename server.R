@@ -14,8 +14,6 @@ fields <- c("First_Name","Last_Name","email","Skill","Skill_detail","Need","Need
 table <- "reciprocity_database"
 worksheet <- "examplar"
 
-
-
 ### Set password #####
 Logged = TRUE; # TEMP, removed password procedure for debugging purposes
 PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd7b43ff48")
@@ -44,11 +42,32 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
         observeEvent(input$submit, {
           #when submit is pressed close pop-up window
           toggleModal(session, "modaladd", toggle = "close")
-          toggleModal(session, "modaledit", toggle = "close")
-          toggleModal(session, "modaledit2", toggle = "close")
           saveData(formData()) 
         })
         
+        observeEvent(input$BUTsubmit, {
+         # when edit-submit button is pressed, close pop-up
+          toggleModal(session, "modaledit", toggle = "close")
+          # find row that belong to the last name that was entered by person
+          df = loadData()
+          num <- which(tolower(as.character(df$Last_Name)) == tolower(as.character(input$Last_Name2)))
+          num <- paste("A",num, sep="")
+          # display data that person entered before 
+          })
+        
+        # somehow the pop-up does not stay on screen but disappears... 
+        
+        observeEvent(input$Editsubmit,{
+          # close pop-up when submit button is clicked
+          toggleModal(session, "modaledit2", toggle = "close")
+          # find row that belong to the last name that was entered by person
+          df = loadData()
+          num <- which(tolower(as.character(df$Last_Name)) == tolower(as.character(input$Last_Name2)))
+          num <- paste("A",num, sep="")
+          # safe newly entered data to the person specific row 
+          editData(formData(),num)
+        })
+      
         ### Table #####   
         # Show the database
         # (show updated database when Submit is clicked)
@@ -148,7 +167,7 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
           df_pairs <- graphinfo$df_pairs
           skills <- graphinfo$skills
           #create color palette
-          palet = colorRampPalette(brewer.pal(length(skills),"Pastel1"))
+          palet = colorRampPalette(brewer.pal(length(unique(skills)),"Paired"))
           colors = data.frame(skills = sort(skills), colors = c(color = palet(length(skills))))
           #set nodes parameters
           nodes$shape <- "dot"  
@@ -283,13 +302,12 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
           database
         }
         
-        editData <- function() {
-       # TODO: this function is not used yet but we could implement that users can also update their entry instead of creating a new one altogether
-       #  Grab the Google Sheet
+        editData <- function(dataedit,num) {
+        # TODO: this function is not used yet but we could implement that users can also update their entry instead of creating a new one altogether
+        #  Grab the Google Sheet
          sheet <- gs_title(table)
-       #  Read the data
-        database <- gs_edit_cell(sheet,ws = worksheet)
-        database
+        #  Edit the data
+        #database <- gs_edit_cell(sheet, ws = worksheet, input = dataedit, anchor = num)
         }
         
         }

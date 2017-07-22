@@ -45,16 +45,16 @@ shinyUI(fluidPage(
                     #pop-up when "Edit Data" is clicked
                     actionButton("BUTedit", "Edit Data"),
                     bsModal("modaledit", "Edit data", "BUTedit", size = "small",
-                      HTML("Please fill in your last name and select your full name out of the options:"),
-                      textInput("Last_Name", "Last Name", ""),
-                      actionButton("BUTsubmit", "Submit"),
-                      bsModal("modaledit2", "Edit your data", "BUTsubmit", size = "small",
+                      HTML("Please fill in your last name:"),
+                      textInput("Last_Name2", "Last Name", ""),
+                    actionButton("BUTsubmit", "Submit"),
+                    bsModal("modaledit2", "Edit data", "BUTsubmit", size = "small",
                               HTML("Please update your information:"),
-                              textInput("New skill", "New Skill", ""),
+                              textInput("Skill", "New Skill", ""),
                               textInput("Skill_detail", "Skill in detail", ""),
-                              textInput("New need", "New Need", ""),
-                              textInput("Need_detail", "Need in detail", ""),
-                              actionButton("submit", "Submit"))
+                              textInput("Need", "New Need", ""),
+                              textInput("Need_detail", "Need in detail",""),
+                              actionButton("Editsubmit", "Submit"))
                       )
               )
     ))
