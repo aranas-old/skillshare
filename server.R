@@ -46,8 +46,6 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
         })
         
         observeEvent(input$BUTsubmit, {
-         # when edit-submit button is pressed, close pop-up
-          toggleModal(session, "modaledit", toggle = "close")
           # find row that belong to the last name that was entered by person
           df = loadData()
           num <- which(tolower(as.character(df$Last_Name)) == tolower(as.character(input$Last_Name2)))
@@ -55,11 +53,11 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
           # display data that person entered before 
           })
         
-        # somehow the pop-up does not stay on screen but disappears... 
-        
         observeEvent(input$Editsubmit,{
           # close pop-up when submit button is clicked
           toggleModal(session, "modaledit2", toggle = "close")
+         # edit-submit pop-up (BUTsubmit) only closes when information is entered(Editsubmit) maybe there is a more elegant solution?
+          toggleModal(session, "modaledit", toggle = "close")
           # find row that belong to the last name that was entered by person
           df = loadData()
           num <- which(tolower(as.character(df$Last_Name)) == tolower(as.character(input$Last_Name2)))
