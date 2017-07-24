@@ -55,6 +55,7 @@ shinyUI(fluidPage(
                               textInput("Need2", "New Need", ""),
                               textInput("Need_detail2", "Need in detail",""),
                               actionButton("Editsubmit", "Submit"))
+       
                       )
               )
     ))

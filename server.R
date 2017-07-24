@@ -50,6 +50,23 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
           df = loadData()
           num <- which(tolower(as.character(df$Last_Name)) == tolower(as.character(input$Last_Name2)))
           num <- paste("A",num, sep="")
+          # give error message when the entered name does not match any of the names in the dataset - TODO: somehow this is evaluated after the next pop-ip window appears, and it does not redirect to the window where they can enter their last name again
+          observeEvent(!length(num), {
+            showModal(modalDialog(
+              title = "Error",
+              "Your name is not yet in the list. Maybe you typed it in wrong?",
+              footer = tagList(
+                actionButton("BUTok", "Try again")
+              )
+            ))
+            observeEvent(input$BUTok,{
+              removeModal()
+              toggleModal(session, "modaledit", toggle = "close")
+              toggleModal(session, "modaledit2", toggle = "close")
+              # would be nice if the window to type the name would reappear automatically
+            })
+            
+          })
           # display data that person entered before 
           })
         
