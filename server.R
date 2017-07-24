@@ -97,6 +97,7 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
         # (show updated database when Submit is clicked)
         output$database <- DT::renderDataTable({
           input$submit 
+          input$Editsubmit
           df = loadData()
           df <- df[,c("First_Name","Last_Name","Skills","Needs")]
           #df <- df[order(df$First_Name),]
