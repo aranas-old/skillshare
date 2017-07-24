@@ -50,10 +50,10 @@ shinyUI(fluidPage(
                     actionButton("BUTsubmit", "Submit")),
                     bsModal("modaledit2", "Edit data", "BUTsubmit", size = "small",
                               HTML("Please update your information (please be patient, saving data may take some time):"),
-                              textInput("Skill2", "New Skill", ""),
-                              textInput("Skill_detail2", "Skill in detail", ""),
-                              textInput("Need2", "New Need", ""),
-                              textInput("Need_detail2", "Need in detail",""),
+                              textInput("Skill2", "New Skill", value = "",placeholder = "enter all your skills"),
+                              textInput("Skill_detail2", "Skill in detail", "",placeholder = " "),
+                              textInput("Need2", "New Need", value = "",placeholder = "enter all your needs"),
+                              textInput("Need_detail2", "Need in detail","",placeholder = " "),
                               actionButton("Editsubmit", "Submit"))
        
                       )

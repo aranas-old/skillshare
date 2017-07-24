@@ -22,6 +22,8 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
   function(input, output, session) {
     source("www/Login.R",  local = TRUE)
     
+    
+    
     observe({
       if (USER$Logged == TRUE) {
         
@@ -52,7 +54,8 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
           toggleModal(session, "modaledit", toggle = "close")
           
           if (length(num) < 1){
-            # give error message when the entered name does not match any of the names in the dataset - TODO: somehow this is evaluated after the next pop-ip window appears, and it does not redirect to the window where they can enter their last name again
+            # give error message when the entered name does not match any of the names in the dataset 
+            # TODO: it takes a long time for this to be evaluated, and the edit window already appears before the error message 
             observeEvent(num, {
               showModal(modalDialog(
                 title = "Error",
@@ -70,8 +73,12 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
             } else{
             # do nothing
           }
-        
-          # TODO: display data that person entered before 
+          
+          # TODO: display data that person entered before
+          updatePlaceholder("Skill2", label = "New Skill", value = as.character(df[num, 5]), placeholder = as.character(df[num, 5]))
+          updatePlaceholder("Need2", label = "New Need", value = as.character(df[num, 6]), placeholder = as.character(df[num, 6]))
+          updatePlaceholder("Skill_detail2", label = "Skills in detail", value = as.character(df[num, 8]), placeholder = as.character(df[num, 8]))
+          updatePlaceholder("Need_detail2", label = "Need in detail", value = as.character(df[num, 7]), placeholder = as.character(df[num, 7]))
           })
         
         observeEvent(input$Editsubmit,{
@@ -335,6 +342,11 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
         database <- gs_edit_cells(sheet, ws = worksheet, input = input$Need2, anchor = num3)
         database <- gs_edit_cells(sheet, ws = worksheet, input = input$Need_detail2, anchor = num4)
         database
+        }
+        
+        updatePlaceholder <- function(inputId, label = NULL, value = NULL, placeholder = NULL) {
+          message <- list(label=label, value=value, placeholder=placeholder)
+          session$sendInputMessage(inputId, message)
         }
         
         }
