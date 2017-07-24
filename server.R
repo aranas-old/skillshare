@@ -3,14 +3,14 @@ library(googlesheets)
 library(RColorBrewer)
 library(igraph)
 library(plotly)
-#require(shiny)
+require(shiny)
 require(visNetwork, quietly = TRUE) # library(visNetwork) 
 library(DT)
 library(shinyjs)
 library(shinyBS)
 
 ### Set variables #####
-fields <- c("First_Name","Last_Name","email","Skill","Skill_detail","Need","Need_detail","Department")
+fields <- c("First_Name","Last_Name","email","Skill","Skill_detail","Need","Need_detail","Department","Skill2", "Skill_detail2", "Need2", "Need_detail2")
 table <- "reciprocity_database"
 worksheet <- "examplar"
 
@@ -60,10 +60,14 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
           toggleModal(session, "modaledit", toggle = "close")
           # find row that belong to the last name that was entered by person
           database <- loadData()
-          num <- which(tolower(as.character(database$Last_Name)) == tolower(as.character(input$Last_Name2)))
-          num <- paste("A",num, sep="")
+          num <- 1+which(tolower(as.character(database$Last_Name)) == tolower(as.character(input$Last_Name2)))
+          num1 <- paste("E",num, sep="")
+          num2 <- paste("H",num, sep="")
+          num3 <- paste("F",num, sep="")
+          num4 <- paste("G",num, sep="")
+          
           # safe newly entered data to the person specific row 
-          editData(formData(),num)
+          editData(num1,num2,num3,num4)
         })
       
         ### Table #####   
@@ -73,7 +77,7 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
           input$submit 
           df = loadData()
           df <- df[,c("First_Name","Last_Name","Skills","Needs")]
-          df <- df[order(df$First_Name),]
+          #df <- df[order(df$First_Name),]
           df$Skills <- as.factor(df$Skills) #set columns to factor if search field should be dropdown
           datatable(df, filter = 'top') # put search fields on top of table
         })
@@ -300,12 +304,14 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
           database
         }
         
-        editData <- function(dataedit,num) {
-        # TODO: this function is not used yet but we could implement that users can also update their entry instead of creating a new one altogether
+        editData <- function(num1,num2,num3,num4) {
         #  Grab the Google Sheet
          sheet <- gs_title(table)
         #  Edit the data
-        database <- gs_edit_cells(sheet, ws = worksheet, input = dataedit, anchor = num,byrow = T)
+        database <- gs_edit_cells(sheet, ws = worksheet, input = input$Skill2, anchor = num1)
+        database <- gs_edit_cells(sheet, ws = worksheet, input = input$Skill_detail2, anchor = num2)
+        database <- gs_edit_cells(sheet, ws = worksheet, input = input$Need2, anchor = num3)
+        database <- gs_edit_cells(sheet, ws = worksheet, input = input$Need_detail2, anchor = num4)
         database
         }
         
