@@ -59,8 +59,8 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
          # edit-submit pop-up (BUTsubmit) only closes when information is entered(Editsubmit) maybe there is a more elegant solution?
           toggleModal(session, "modaledit", toggle = "close")
           # find row that belong to the last name that was entered by person
-          df = loadData()
-          num <- which(tolower(as.character(df$Last_Name)) == tolower(as.character(input$Last_Name2)))
+          database <- loadData()
+          num <- which(tolower(as.character(database$Last_Name)) == tolower(as.character(input$Last_Name2)))
           num <- paste("A",num, sep="")
           # safe newly entered data to the person specific row 
           editData(formData(),num)
@@ -305,7 +305,8 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
         #  Grab the Google Sheet
          sheet <- gs_title(table)
         #  Edit the data
-        #database <- gs_edit_cell(sheet, ws = worksheet, input = dataedit, anchor = num)
+        database <- gs_edit_cells(sheet, ws = worksheet, input = dataedit, anchor = num,byrow = T)
+        database
         }
         
         }
