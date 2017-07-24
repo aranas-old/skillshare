@@ -49,6 +49,7 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
           # find row that belong to the last name that was entered by person
           df = loadData()
           num <- which(tolower(as.character(df$Last_Name)) == tolower(as.character(input$Last_Name2)))
+          toggleModal(session, "modaledit", toggle = "close")
           
           if (length(num) < 1){
             # give error message when the entered name does not match any of the names in the dataset - TODO: somehow this is evaluated after the next pop-ip window appears, and it does not redirect to the window where they can enter their last name again
@@ -62,8 +63,6 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
               ))
               observeEvent(input$BUTok,{
                 removeModal()
-                toggleModal(session, "modaledit", toggle = "close")
-                toggleModal(session, "modaledit2", toggle = "close")
                 # TODO: would be nice if the window to type the name would reappear automatically
               })
               
@@ -72,15 +71,12 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
             # do nothing
           }
         
-          # display data that person entered before 
+          # TODO: display data that person entered before 
           })
         
         observeEvent(input$Editsubmit,{
-          # close pop-up when submit button is clicked
-          toggleModal(session, "modaledit2", toggle = "close")
-         # edit-submit pop-up (BUTsubmit) only closes when information is entered(Editsubmit) maybe there is a more elegant solution?
-          toggleModal(session, "modaledit", toggle = "close")
-          # find row that belong to the last name that was entered by person
+
+          # find row that belongs to the last name that was entered by person
           database <- loadData()
           num <- 1+which(tolower(as.character(database$Last_Name)) == tolower(as.character(input$Last_Name2)))
           num1 <- paste("E",num, sep="")
@@ -90,6 +86,9 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
           
           # safe newly entered data to the person specific row 
           editData(num1,num2,num3,num4)
+          
+          # close pop-up when submit button is clicked
+          toggleModal(session, "modaledit2", toggle = "close")
         })
       
         ### Table #####   
@@ -336,7 +335,6 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
         database <- gs_edit_cells(sheet, ws = worksheet, input = input$Need2, anchor = num3)
         database <- gs_edit_cells(sheet, ws = worksheet, input = input$Need_detail2, anchor = num4)
         database
-        # somehow the datatable isn't automatically updated...
         }
         
         }

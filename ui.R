@@ -47,9 +47,9 @@ shinyUI(fluidPage(
                     bsModal("modaledit", "Edit data", "BUTedit", size = "small",
                       HTML("Please fill in your last name:"),
                       textInput("Last_Name2", "Last Name", ""),
-                    actionButton("BUTsubmit", "Submit"),
+                    actionButton("BUTsubmit", "Submit")),
                     bsModal("modaledit2", "Edit data", "BUTsubmit", size = "small",
-                              HTML("Please update your information:"),
+                              HTML("Please update your information (please be patient, saving data may take some time):"),
                               textInput("Skill2", "New Skill", ""),
                               textInput("Skill_detail2", "Skill in detail", ""),
                               textInput("Need2", "New Need", ""),
@@ -59,7 +59,7 @@ shinyUI(fluidPage(
                       )
               )
     ))
-  ),
+  ,
   fluidRow(
     column(4,
            helpText('Click on one of the dot to get more details about individual: '), 
