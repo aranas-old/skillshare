@@ -116,7 +116,8 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
         
         #set content of graph (nodes & edges)
         nodes_pairs <- reactive({
-          input$submit # update nodes whenever new data is submitted
+          input$submit 
+          input$Editsubmit # update nodes whenever new data is submitted or edited
           datanet <- loadData()
           datanet <- within(datanet,  Fullname <- paste(First_Name, Last_Name, sep=" "))  # new var "Fullname" so as to keep First+Last name separate
           
