@@ -114,102 +114,89 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
         
         #set content of graph (nodes & edges)
         nodes_pairs <- reactive({
-          input$submit 
-          input$Editsubmit # update nodes whenever new data is submitted or edited
+          input$submit # update nodes whenever new data is submitted
           datanet <- loadData()
-          datanet <- within(datanet,  Fullname <- paste(First_Name, Last_Name, sep=" "))  # new var "Fullname" so as to keep First+Last name separate
-          
+          datanet <- within(datanet, Fullname <- paste(First_Name, Last_Name, sep = " "))  # new var "Fullname" so as to keep First+Last name separate
           #find pairs of people where skills match needs and create new table with one row per pair (with repetitions)
           df_pairs <- data.frame()
           nodes <- data.frame()
           
           trim <- function (x) gsub("^\\s+|\\s+$", "", x) # returns string w/o leading or trailing whitespace
-          uppercase_first <- function(x){
+          uppercase_first <- function(x){  # we can uppercase the first letter, it's only for aesthetics
             substr(x, 1, 1) <- toupper(substr(x, 1, 1))
             x
           }
-          string_to_list <- function(x){trim(unlist(strsplit(x,",")))}
+          remove_NA <- function(x){x[!is.na(x)]}
+          string_to_list <- function(x){trim(unlist(strsplit(x, ",")))}
           
-          skills <- c()  # or create unified data frame that contains skills and times seen
-          skill_frequency <- c()
-          needs <- c()
-          needs_frequency <- c()
-          skills_sort <- c()
-          for (name in sort(unique(datanet$Fullname))) {
-            combined <- 0
-            indname <- which(datanet$Fullname %in% name)
-            currentskill <- uppercase_first(string_to_list(datanet$Skills[indname]))   # we can uppercase the first letter, it's only for aesthetics 
-            currentneed <- uppercase_first(string_to_list((datanet$Needs[indname])))  # @Sophie: if there is an issue with unique() we should resolve it here, not at the node
-            for (nskill in currentskill[!is.na(currentskill)]){
-              skills_sort <- rbind(skills_sort,nskill)  # only temporarily here, will remove
-              if (is.null(skills) || length(grep(nskill, skills, ignore.case = TRUE))==0){
-                skills <- c(skills,nskill)
-                skill_frequency <- c(skill_frequency,1)
-              } else { #  w/o lowercasing, the skills could contain both Yoga and yoga. We are only adding the first encounter and increasing the frequency each time.
-                skill_idx = grep(nskill, skills, ignore.case = TRUE)
-                skill_frequency[skill_idx] <- skill_frequency[skill_idx] + 1
+          skills <- uppercase_first(remove_NA(string_to_list(datanet$Skills))) # reads ALL skills into a list
+          needs <- uppercase_first(remove_NA(string_to_list(datanet$Needs))) # reads ALL needs
+          
+          needs_processed <- c()  # reads Needs column and processes each line separately
+          for (row in 1:nrow(datanet)){
+            if (is.na(datanet$Needs[row])){
+              needs_processed <- rbind(needs_processed, '')  # participant has no needs but we need to keep the row, so rbind it
+            } else {
+              needs_processed <- rbind(needs_processed, paste(uppercase_first(string_to_list(datanet$Needs[row])), collapse = ","))
+            }
+          }
+          
+          # now go through each participant row (we can force 1 line/participant, and remove "unique").
+          for (row in 1:nrow(datanet)){
+            currentskill <- uppercase_first(remove_NA(string_to_list(datanet$Skills[row])))
+            currentneed <- uppercase_first(remove_NA(string_to_list((datanet$Needs[row]))))
+            for (nskill in currentskill) {
+              combined <- 0
+              to_ind <- grep(paste("(^|,| ,)", nskill, "($|,)", sep = ""), needs_processed, ignore.case=TRUE)
+              if (length(to_ind)>0){  # first check if skill is needed
+                to <- datanet$Fullname[to_ind]
+                from <- rep(datanet$Fullname[row], length(to))
+                title <- nskill
+                if (length(to) != 0) {
+                  combined <- rbind(from, to, title)
+                  df_pairs <- rbind(df_pairs, as.data.frame(t(combined)))
+                }
               }
-              to_ind <- grepl(paste("^",nskill,"$", sep=""),datanet$Needs, ignore.case=TRUE)  # no need to lowercase, we can have a case-insensitive match. And ^nskill$ is a regular expression that looks for word boundaries
-              to <- datanet$Fullname[to_ind]
-              from <- rep(name,length(to))
-              title <- nskill
-              if (length(to)!=0) {
-                combined <- rbind(from,to,title)
-                df_pairs <- rbind(df_pairs,as.data.frame(t(combined)))
-              }
-
             }
-
-            loadData <- function() {
-                # Grab the Google Sheet
-                sheet <- gs_title(table)
-                # Read the data
-                database <- gs_read_csv(sheet, ws = worksheet)
-                database
+            if (!is.na(currentskill) || !is.na(currentneed)){  # add node if there are skills or needs --- or if you want we can add it anyway
+              nodes <- rbind(nodes, data.frame(id = datanet$Fullname[row], 
+                                               Skills = paste(currentskill, collapse = ","),
+                                               Needs = paste(currentneed, collapse = ","), 
+                                               Department = paste(datanet$Department[row], collapse = ",")))
             }
-
-            editData <- function() {
-                # TODO: this function is not used yet but we could implement that users can also update their entry instead of creating a new one altogether
-                #  Grab the Google Sheet
-                sheet <- gs_title(table)
-                #  Read the data
-                database <- gs_edit_cell(sheet, ws = worksheet)
-                database
-            }
-
-            nodes <- rbind(nodes,data.frame(id = name,
-                                            Skills = paste(currentskill, collapse = ", ") ,
-                                            Needs = paste(datanet$Needs[indname], collapse = ", "),
-                                            Department = paste(datanet$Department[indname], collapse = ", ")))
           }
           
           df_pairs$title <- as.character(df_pairs$title)
-          df_pairs      <-  df_pairs[order(df_pairs$title),]
+          df_pairs <- df_pairs[order(df_pairs$title),]
           df_pairs$title <- as.factor(df_pairs$title)
           info <- nodes
-          count = data.frame()
-          for (name in sort(unique(datanet$Fullname))) {
-            if (any(df_pairs == name)){
-              count = rbind(count,data.frame(Connections = length(which(df_pairs == name))*2))
-            }else {count = rbind(count,data.frame(Connections = 4))}
+          count <- data.frame()
+          for (row in 1:nrow(datanet)){  
+            name <- datanet$Fullname[row]
+            if (any(df_pairs == name)) {
+              count = rbind(count, data.frame(Connections = length(which(df_pairs == name)) * 2))
+            } else {
+              count = rbind(count, data.frame(Connections = 4))
+            }
           }
-          nodes <- cbind(nodes,data.frame(Connections = count))
+          nodes <- cbind(nodes, data.frame(Connections = count))
           
-          graphinfo <- list(nodes = nodes, df_pairs = df_pairs, skills_sort = skills_sort,needs = needs) # concatenate all variables that should be accessed elsewhere in code
+          graphinfo <- list(nodes = nodes, df_pairs = df_pairs, skills = skills, needs = needs_processed) # concatenate all variables that should be accessed elsewhere in code
           graphinfo
         })
+        
         #set visual parameters of graph
-        networkgraph  <- reactive({
+        networkgraph <- reactive({
           #access nodes & edges reactive values
           graphinfo <- nodes_pairs()
           nodes <- graphinfo$nodes
           df_pairs <- graphinfo$df_pairs
           skills <- graphinfo$skills
           #create color palette
-          palet = colorRampPalette(brewer.pal(length(unique(skills)),"Paired"))
-          colors = data.frame(skills = sort(skills), colors = c(color = palet(length(skills))))
+          palet = colorRampPalette(brewer.pal(length(unique(skills)), "Pastel1"))
+          colors = data.frame(skills = sort(unique(skills)), colors = c(color = palet(length(unique(skills)))))
           #set nodes parameters
-          nodes$shape <- "dot"  
+          nodes$shape <- "dot"
           nodes$shadow <- TRUE # Nodes will drop shadow
           nodes$label <- NULL # Node label
           #nodes$title <- paste0("Name : ", nodes$id, "<br> Email : ", nodes$Email , "<br> Skill : ", nodes$Skills)
@@ -218,27 +205,25 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
           nodes$borderWidth <- 2 # Node border width
           nodes$font.size <- 0
           #set nodes colors
-          nodes$color.background<- "#4bd8c1"
-          nodes$color.border<- "#42b2a0"
+          nodes$color.background <- "#4bd8c1"
+          nodes$color.border <- "#42b2a0"
           nodes$color.highlight.background <- "#4bd8c1"
           nodes$color.highlight.border <- "red"
           #set edges parameters
-          df_pairs$color <-colors$colors[match(df_pairs$title,colors$skills)]  # line color  
+          df_pairs$color <- colors$colors[match(df_pairs$title, colors$skills)]  # line color
           df_pairs$arrows <- "to" # arrows: 'from', 'to', or 'middle'
           df_pairs$smooth <- TRUE    # should the edges be curved?
           df_pairs$shadow <- FALSE    # edge shadow
           df_pairs$width <- 5    # edge shadow
           #output network
-          visNetwork(nodes,df_pairs) %>% 
+          visNetwork(nodes, df_pairs) %>%
             visIgraphLayout(layout = "layout_in_circle") %>%
             visOptions(highlightNearest = FALSE
                        #nodesIdSelection = TRUE
                        #selectedBy = list(variable = "Skills")
             ) %>%
             visInteraction(hover = T, hoverConnectedEdges = T, dragNodes = FALSE) %>%
-            visEvents(click = "function(nodes){
-                      Shiny.onInputChange('current_node_id', nodes.nodes);}"
-            )
+            visEvents(click = "function(nodes){ Shiny.onInputChange('current_node_id', nodes.nodes); }")
         })
         
         output$network <- renderVisNetwork({
@@ -260,8 +245,6 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
           visNetworkProxy("network") %>%
             visUpdateNodes(nodes)
         })
-        
-        
         
         ### pie plots ##### 
         #TODO: Need to plot frequencies according to skill_frequency now

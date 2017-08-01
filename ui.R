@@ -2,7 +2,7 @@
 # hallo
 shinyUI(fluidPage(
   useShinyjs(),  # Include shinyjs
-  titlePanel(title=div(img(src="images/MPI_logo.png"),"Skillshare Database")),
+  titlePanel(title=div(img(src="images/MPI_logo.png", height= 100),"Skillshare Database")),
   fluidRow(
     column(6,
            tagList(
@@ -22,7 +22,7 @@ shinyUI(fluidPage(
     column(6,
            tabsetPanel(
            tabPanel("Table",
-                    DT::dataTableOutput("database", width = 300), tags$hr()),
+                    DT::dataTableOutput("database", width = 400), tags$hr()),
            tabPanel("Statistics",
                     splitLayout(cellHeights = c("50%", "50%"),
                     plotlyOutput("piePlot1"),
