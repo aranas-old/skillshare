@@ -44,20 +44,21 @@ shinyUI(fluidPage(
                     #pop-up when "Edit Data" is clicked
                     actionButton("BUTedit", "Edit Data"),
                     bsModal("modaledit", "Edit data", "BUTedit", size = "small",
-                      HTML("Please fill in your last name and select your full name out of the options:"),
-                      textInput("Last_Name", "Last Name", ""),
-                      actionButton("BUTsubmit", "Submit"),
-                      bsModal("modaledit2", "Edit your data", "BUTsubmit", size = "small",
-                              HTML("Please update your information:"),
-                              textInput("New skill", "New Skill", ""),
-                              textInput("Skill_detail", "Skill in detail", ""),
-                              textInput("New need", "New Need", ""),
-                              textInput("Need_detail", "Need in detail", ""),
-                              actionButton("submit", "Submit"))
+                      HTML("Please fill in your last name:"),
+                      textInput("Last_Name2", "Last Name", ""),
+                    actionButton("BUTsubmit", "Submit")),
+                    bsModal("modaledit2", "Edit data", "BUTsubmit", size = "small",
+                              HTML("Please update your information (please be patient, saving data may take some time):"),
+                              textInput("Skill2", "New Skill", value = "",placeholder = "enter all your skills"),
+                              textInput("Skill_detail2", "Skill in detail", "",placeholder = " "),
+                              textInput("Need2", "New Need", value = "",placeholder = "enter all your needs"),
+                              textInput("Need_detail2", "Need in detail","",placeholder = " "),
+                              actionButton("Editsubmit", "Submit"))
+       
                       )
               )
     ))
-  ),
+  ,
   fluidRow(
     column(4,
            helpText('Click on one of the dot to get more details about individual: '), 
