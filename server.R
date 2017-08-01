@@ -5,6 +5,9 @@ library(igraph)
 library(plotly)
 <<<<<<< HEAD
 library(visNetwork)
+=======
+require(shiny)
+require(visNetwork, quietly = TRUE) # library(visNetwork) 
 >>>>>>> edits_Anne
 library(DT)
 require(shiny)
