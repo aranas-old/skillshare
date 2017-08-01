@@ -4,7 +4,7 @@ library(RColorBrewer)
 library(igraph)
 library(plotly)
 require(shiny)
-require(visNetwork, quietly = TRUE) # library(visNetwork) 
+require(visNetwork, quietly = TRUE)
 library(DT)
 require(shiny)
 library(shinyjs)
@@ -65,6 +65,8 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
               ))
               observeEvent(input$BUTok,{
                 removeModal()
+                toggleModal(session, "modaledit2", toggle = "close")
+                toggleModal(session, "modaledit", toggle = "open")
                 # TODO: would be nice if the window to type the name would reappear automatically
               })
               

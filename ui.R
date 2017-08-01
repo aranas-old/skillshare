@@ -1,4 +1,9 @@
-#ui.R
+library(shinyjs)
+library(shinyBS)
+library(DT)
+library(plotly)
+require(visNetwork, quietly = TRUE)
+
 # hallo
 shinyUI(fluidPage(
   useShinyjs(),  # Include shinyjs
