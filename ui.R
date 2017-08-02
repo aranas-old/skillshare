@@ -4,10 +4,9 @@ library(DT)
 library(plotly)
 require(visNetwork, quietly = TRUE)
 
-# hallo
 shinyUI(fluidPage(
   useShinyjs(),  # Include shinyjs
-  titlePanel(title=div(img(src="images/MPI_logo.png", height= 100),"Skillshare Database")),
+  titlePanel(title=div(img(src="images/combined_logos.png", height= 90),"Skillshare Database")),
   fluidRow(
     column(6,
            tagList(
