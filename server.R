@@ -13,7 +13,7 @@ library(shinyBS)
 ### Set variables #####
 fields <- c("First_Name","Last_Name","email","Skill","Skill_detail","Need","Need_detail","Department","Skill2", "Skill_detail2", "Need2", "Need_detail2")
 table <- "reciprocity_database"
-worksheet <- "examplar"
+worksheet <- "data_form"
 
 ### Set password #####
 Logged = TRUE; # TEMP, removed password procedure for debugging purposes
@@ -224,7 +224,7 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
                        #nodesIdSelection = TRUE
                        #selectedBy = list(variable = "Skills")
             ) %>%
-            visInteraction(hover = T, hoverConnectedEdges = T, dragNodes = FALSE) %>%
+            visInteraction(hover = T, hoverConnectedEdges = T, dragNodes = FALSE, zoomView = FALSE) %>%
             visEvents(click = "function(nodes){ Shiny.onInputChange('current_node_id', nodes.nodes); }")
         })
         
