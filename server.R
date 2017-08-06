@@ -99,12 +99,16 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
         })
       
         ### Table #####   
-        # Show the database
-        # (show updated database when Submit is clicked)
-        output$database <- DT::renderDataTable({
+        # have datatable content as reactive value to be accessed later (i.e. pop-up for details)
+        # update with every submit/edit
+        dat <- reactive({
           input$submit 
           input$Editsubmit
-          df = loadData()
+          dat = loadData()
+        })
+        # Select relevant information to visualize in table
+        output$database <- DT::renderDataTable({
+          df = dat()
           df <- df[,c("First_Name","Last_Name","Skills","Needs")]
           #df <- df[order(df$First_Name),]
           df$Skills <- as.factor(df$Skills) #set columns to factor if search field should be dropdown
@@ -323,9 +327,26 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
         })   
         
         ### Detailed view of user##### 
+        observeEvent(input$current_node_id, {
+          showModal(modalDialog(
+            title= "Details",
+            renderUI({  # added na.omit on values that could be non available (we don't need to show NA to the user)
+              if (!is.null(input$current_node_id)) {
+                str1 <- paste(input$current_node_id,", ",unique(info$Department[info$id == input$current_node_id]))
+                str2 <- paste(na.omit(unique(info$Email[info$id == input$current_node_id])))  # @Sophie: why unique here?
+                str3 <- paste("My Skills:   ",unique(info$Skills[info$id == input$current_node_id]))
+                str4 <- paste(na.omit(unique(data$Skills_details[data$Fullname == input$current_node_id])))
+                str5 <- paste("My Needs:    ",unique(info$Needs[info$id == input$current_node_id]))
+                str6 <- paste(na.omit(unique(data$Needs_details[data$Fullname == input$current_node_id])))
+                HTML(paste(str1,str2," ",str3,str4," ",str5,str6,sep = '<br/>'))
+              }
+            })
+          ))
+        })
         #TODO: This should in the future be a pop-up at click not a separate field on the GUI
         output$data_individual <- renderUI({  # added na.omit on values that could be non available (we don't need to show NA to the user)
           if (!is.null(input$current_node_id)) {
+            database <- LoadData()
             str1 <- paste(input$current_node_id,", ",unique(info$Department[info$id == input$current_node_id]))
             str2 <- paste(na.omit(unique(info$Email[info$id == input$current_node_id])))  # @Sophie: why unique here?
             str3 <- paste("My Skills:   ",unique(info$Skills[info$id == input$current_node_id]))
