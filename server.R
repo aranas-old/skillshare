@@ -232,9 +232,10 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
           networkgraph()
         })
         # If search function in datatable is used, clear selection)
-        #observeEvent(input$database_rows_all,{
-        #  input$database_rows_selected = ""
-        #})
+        observeEvent(input$database_rows_all, {
+          proxy = dataTableProxy('database')
+          selectRows(proxy, NULL)
+        })
         # interaction graph & datatable (both search function updates as well as selection)        
           observe({
           indx = input$database_rows_all      # rows on all pages (after being filtered)
