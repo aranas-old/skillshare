@@ -266,6 +266,7 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
           df_pairs$color[gray_out] <- "#d3d3d3"
           df_pairs$color <- as.factor(df_pairs$color) 
           df_pairs$width <- 5    # edge shadow
+          df_pairs$arrows <- "to"
           #FIX: for some reason the tip of the arrows do not change color
           #update network
           visNetworkProxy("network") %>%
