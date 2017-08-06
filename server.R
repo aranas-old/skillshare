@@ -115,7 +115,10 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
           #df <- df[order(df$First_Name),]
           df$Skills <- as.factor(df$Skills) #set columns to factor if search field should be dropdown
           datatable(df, filter = 'top') # put search fields on top of table
-        })
+          data=data.frame(
+          df,
+          Details = shinyInput(actionButton, length(df$First_Name), 'details', label = "Details", onclick = 'Shiny.onInputChange(\"details_button\",  this.id)' ))
+        },escape=FALSE)
         
         
         ### Network graph #######  
@@ -345,6 +348,24 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
             })
           ))
         })
+        #FIX: his is just a copy of the above observeEvent, is there an elegant way to combine them?
+        observeEvent(input$details_button, {
+          showModal(modalDialog(
+            title= "Details",
+            renderUI({  # added na.omit on values that could be non available (we don't need to show NA to the user)
+              if (!is.null(input$details_button)) {
+                df = dat()
+                str1 <- paste(df$Fullname[as.numeric(input$details_button)],", ",unique(df$Department[as.numeric(input$details_button)]))
+                str2 <- paste(na.omit(unique(df$email[as.numeric(input$details_button)])))  # @Sophie: why unique here? - don't know :)
+                str3 <- paste("My Skills:   ",unique(df$Skills[as.numeric(input$details_button)]))
+                str4 <- paste(na.omit(unique(data$Skills_details[as.numeric(input$details_button)])))
+                str5 <- paste("My Needs:    ",unique(df$Needs[as.numeric(input$details_button)]))
+                str6 <- paste(na.omit(unique(data$Needs_details[as.numeric(input$details_button)])))
+                HTML(paste(str1,str2," ",str3,str4," ",str5,str6,sep = '<br/>'))
+              }
+            })
+          ))
+        })
         
         ### Functions ####
         saveData <- function(data) {
@@ -363,19 +384,27 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
         }
         
         editData <- function(num1,num2,num3,num4) {
-        #  Grab the Google Sheet
-         sheet <- gs_title(table)
-        #  Edit the data
-        database <- gs_edit_cells(sheet, ws = worksheet, input = input$Skill2, anchor = num1)
-        database <- gs_edit_cells(sheet, ws = worksheet, input = input$Skill_detail2, anchor = num2)
-        database <- gs_edit_cells(sheet, ws = worksheet, input = input$Need2, anchor = num3)
-        database <- gs_edit_cells(sheet, ws = worksheet, input = input$Need_detail2, anchor = num4)
-        database
+          #  Grab the Google Sheet
+          sheet <- gs_title(table)
+          #  Edit the data
+          database <- gs_edit_cells(sheet, ws = worksheet, input = input$Skill2, anchor = num1)
+          database <- gs_edit_cells(sheet, ws = worksheet, input = input$Skill_detail2, anchor = num2)
+          database <- gs_edit_cells(sheet, ws = worksheet, input = input$Need2, anchor = num3)
+          database <- gs_edit_cells(sheet, ws = worksheet, input = input$Need_detail2, anchor = num4)
+          database
         }
         
         updatePlaceholder <- function(inputId, label = NULL, value = NULL, placeholder = NULL) {
           message <- list(label=label, value=value, placeholder=placeholder)
           session$sendInputMessage(inputId, message)
+        }
+        #for "Detail" button
+        shinyInput <- function(FUN, len, id, ...) {
+          inputs <- character(len)
+          for (i in seq_len(len)) {
+            inputs[i] <- as.character(FUN(paste0(i), ...))
+          }
+          inputs
         }
         
         }
