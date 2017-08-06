@@ -334,29 +334,16 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
             renderUI({  # added na.omit on values that could be non available (we don't need to show NA to the user)
               if (!is.null(input$current_node_id)) {
                 df = dat()
-                str1 <- paste(input$current_node_id,", ",unique(df$Department[df$id == input$current_node_id]))
-                str2 <- paste(na.omit(unique(df$Email[df$id == input$current_node_id])))  # @Sophie: why unique here? - don't know :)
-                str3 <- paste("My Skills:   ",unique(df$Skills[df$id == input$current_node_id]))
-                str4 <- paste(na.omit(unique(data$Skills_details[data$Fullname == input$current_node_id])))
-                str5 <- paste("My Needs:    ",unique(df$Needs[df$id == input$current_node_id]))
-                str6 <- paste(na.omit(unique(data$Needs_details[data$Fullname == input$current_node_id])))
+                str1 <- paste(input$current_node_id,", ",unique(df$Department[df$Fullname == input$current_node_id]))
+                str2 <- paste(na.omit(unique(df$email[df$Fullname  == input$current_node_id])))  # @Sophie: why unique here? - don't know :)
+                str3 <- paste("My Skills:   ",unique(df$Skills[df$Fullname  == input$current_node_id]))
+                str4 <- paste(na.omit(unique(data$Skills_details[df$Fullname == input$current_node_id])))
+                str5 <- paste("My Needs:    ",unique(df$Needs[df$Fullname  == input$current_node_id]))
+                str6 <- paste(na.omit(unique(data$Needs_details[df$Fullname == input$current_node_id])))
                 HTML(paste(str1,str2," ",str3,str4," ",str5,str6,sep = '<br/>'))
               }
             })
           ))
-        })
-        #TODO: This should in the future be a pop-up at click not a separate field on the GUI
-        output$data_individual <- renderUI({  # added na.omit on values that could be non available (we don't need to show NA to the user)
-          if (!is.null(input$current_node_id)) {
-            database <- LoadData()
-            str1 <- paste(input$current_node_id,", ",unique(info$Department[info$id == input$current_node_id]))
-            str2 <- paste(na.omit(unique(info$Email[info$id == input$current_node_id])))  # @Sophie: why unique here?
-            str3 <- paste("My Skills:   ",unique(info$Skills[info$id == input$current_node_id]))
-            str4 <- paste(na.omit(unique(data$Skills_details[data$Fullname == input$current_node_id])))
-            str5 <- paste("My Needs:    ",unique(info$Needs[info$id == input$current_node_id]))
-            str6 <- paste(na.omit(unique(data$Needs_details[data$Fullname == input$current_node_id])))
-            HTML(paste(str1,str2," ",str3,str4," ",str5,str6,sep = '<br/>'))
-          }
         })
         
         ### Functions ####
