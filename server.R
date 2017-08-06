@@ -105,6 +105,8 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
           input$submit 
           input$Editsubmit
           dat = loadData()
+          dat <- within(dat, Fullname <- paste(First_Name, Last_Name, sep = " "))  # new var "Fullname" so as to keep First+Last name separate
+          dat
         })
         # Select relevant information to visualize in table
         output$database <- DT::renderDataTable({
@@ -121,8 +123,7 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
         #set content of graph (nodes & edges)
         nodes_pairs <- reactive({
           input$submit # update nodes whenever new data is submitted
-          datanet <- loadData()
-          datanet <- within(datanet, Fullname <- paste(First_Name, Last_Name, sep = " "))  # new var "Fullname" so as to keep First+Last name separate
+          datanet <- dat()
           #find pairs of people where skills match needs and create new table with one row per pair (with repetitions)
           df_pairs <- data.frame()
           nodes <- data.frame()
@@ -332,11 +333,12 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
             title= "Details",
             renderUI({  # added na.omit on values that could be non available (we don't need to show NA to the user)
               if (!is.null(input$current_node_id)) {
-                str1 <- paste(input$current_node_id,", ",unique(info$Department[info$id == input$current_node_id]))
-                str2 <- paste(na.omit(unique(info$Email[info$id == input$current_node_id])))  # @Sophie: why unique here?
-                str3 <- paste("My Skills:   ",unique(info$Skills[info$id == input$current_node_id]))
+                df = dat()
+                str1 <- paste(input$current_node_id,", ",unique(df$Department[df$id == input$current_node_id]))
+                str2 <- paste(na.omit(unique(df$Email[df$id == input$current_node_id])))  # @Sophie: why unique here? - don't know :)
+                str3 <- paste("My Skills:   ",unique(df$Skills[df$id == input$current_node_id]))
                 str4 <- paste(na.omit(unique(data$Skills_details[data$Fullname == input$current_node_id])))
-                str5 <- paste("My Needs:    ",unique(info$Needs[info$id == input$current_node_id]))
+                str5 <- paste("My Needs:    ",unique(df$Needs[df$id == input$current_node_id]))
                 str6 <- paste(na.omit(unique(data$Needs_details[data$Fullname == input$current_node_id])))
                 HTML(paste(str1,str2," ",str3,str4," ",str5,str6,sep = '<br/>'))
               }
