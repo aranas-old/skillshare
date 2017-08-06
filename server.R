@@ -13,12 +13,12 @@ library(shinyBS)
 ### Set variables #####
 fields <- c("First_Name","Last_Name","email","Skill","Skill_detail","Need","Need_detail","Department","Skill2", "Skill_detail2", "Need2", "Need_detail2")
 table <- "reciprocity_database"
-worksheet <- "data_form"
+worksheet <- "examplar"
 
 ### Set password #####
 Logged = TRUE; # TEMP, removed password procedure for debugging purposes
 PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd7b43ff48")
-###
+#####
 
   function(input, output, session) {
     source("www/Login.R",  local = TRUE)
@@ -231,21 +231,45 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
         output$network <- renderVisNetwork({
           networkgraph()
         })
-        
-        # if search function is used (presented rows in database table change) update visuals of graph
-        observeEvent(input$database_rows_all,{
+        # If search function in datatable is used, clear selection)
+        #observeEvent(input$database_rows_all,{
+        #  input$database_rows_selected = ""
+        #})
+        # interaction graph & datatable (both search function updates as well as selection)        
+          observe({
           indx = input$database_rows_all      # rows on all pages (after being filtered)
+          sel = input$database_rows_selected
+          if (!is.null(sel)){
+            indx = sel
+          }
           #access reactive values
           graphinfo <- nodes_pairs()
           nodes <- graphinfo$nodes
+          df_pairs <- graphinfo$df_pairs
+          skills <- graphinfo$skills
+          #create color palette
+          palet = colorRampPalette(brewer.pal(length(unique(skills)), "Pastel1"))
+          colors = data.frame(skills = sort(unique(skills)), colors = c(color = palet(length(unique(skills)))))
           #change color
-          nodes$color.background <- "gray"
-          nodes$color.border <- "gray"
+          nodes$color.background <- "#d3d3d3" #lightgray
+          nodes$color.border <- "#d3d3d3"
           nodes$color.background[indx] <- "#4bd8c1"
           nodes$color.border[indx] <- "#42b2a0"
+          #color all edges
+          df_pairs$color <- colors$colors[match(df_pairs$title, colors$skills)]  # line color
+          #gray out the ones belonging to gray nodes
+          #FIX:so ugly, there must be a more elegant way?
+          gray_out=intersect(which(df_pairs$from%in%setdiff(df_pairs$from,nodes$id[indx])),which(df_pairs$to%in%setdiff(df_pairs$to,nodes$id[indx])))
+          df_pairs$color <- as.character(df_pairs$color) # weird interference with the factor level
+          df_pairs$color[gray_out] <- "#d3d3d3"
+          df_pairs$color[gray_out] <- "#d3d3d3"
+          df_pairs$color <- as.factor(df_pairs$color) 
+          df_pairs$width <- 5    # edge shadow
+          #FIX: for some reason the tip of the arrows do not change color
           #update network
           visNetworkProxy("network") %>%
-            visUpdateNodes(nodes)
+            visUpdateNodes(nodes) %>%
+            visUpdateEdges(df_pairs)
         })
         
         ### pie plots ##### 
