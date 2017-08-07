@@ -9,7 +9,7 @@ library(DT)
 require(shiny)
 library(shinyjs)
 library(shinyBS)
-
+useShinyjs() # Include shinyjs
 ### Set variables #####
 fields <- c("First_Name","Last_Name","email","Skill","Skill_detail","Need","Need_detail","Department","Skill2", "Skill_detail2", "Need2", "Need_detail2")
 table <- "reciprocity_database"
@@ -119,8 +119,7 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
           df,
           Details = shinyInput(actionButton, length(df$First_Name), 'details', label = "Details", onclick = 'Shiny.onInputChange(\"details_button\",  this.id)' ))
         },escape=FALSE)
-        
-        
+          
         ### Network graph #######  
         
         #set content of graph (nodes & edges)
@@ -331,42 +330,47 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
         })   
         
         ### Detailed view of user##### 
-        observeEvent(input$current_node_id, {
+        observeEvent(c(
+          input$details_button,
+          input$current_node_id
+          ), {
+          df = dat()
+          if (!is.null(input$current_node_id)) {
+            current = which(df$Fullname==input$current_node_id)}
+          else if (!is.null(input$details_button)){
+            current = as.numeric(input$details_button)}
           showModal(modalDialog(
             title= "Details",
             renderUI({  # added na.omit on values that could be non available (we don't need to show NA to the user)
-              if (!is.null(input$current_node_id)) {
-                df = dat()
-                str1 <- paste(input$current_node_id,", ",unique(df$Department[df$Fullname == input$current_node_id]))
-                str2 <- paste(na.omit(unique(df$email[df$Fullname  == input$current_node_id])))  # @Sophie: why unique here? - don't know :)
-                str3 <- paste("My Skills:   ",unique(df$Skills[df$Fullname  == input$current_node_id]))
-                str4 <- paste(na.omit(unique(data$Skills_details[df$Fullname == input$current_node_id])))
-                str5 <- paste("My Needs:    ",unique(df$Needs[df$Fullname  == input$current_node_id]))
-                str6 <- paste(na.omit(unique(data$Needs_details[df$Fullname == input$current_node_id])))
+                str1 <- paste(df$Fullname[current],", ",unique(df$Department[current]))
+                str2 <- paste(na.omit(unique(df$email[current])))  # @Sophie: why unique here? - don't know :)
+                str3 <- paste("My Skills:   ",unique(df$Skills[current]))
+                str4 <- paste(na.omit(unique(data$Skills_details[current])))
+                str5 <- paste("My Needs:    ",unique(df$Needs[current]))
+                str6 <- paste(na.omit(unique(data$Needs_details[current])))
                 HTML(paste(str1,str2," ",str3,str4," ",str5,str6,sep = '<br/>'))
-              }
-            })
+            }),
+            footer = modalButton("close"),actionButton("BUTedit","Edit data")
           ))
-        })
-        #FIX: his is just a copy of the above observeEvent, is there an elegant way to combine them?
-        observeEvent(input$details_button, {
-          showModal(modalDialog(
-            title= "Details",
-            renderUI({  # added na.omit on values that could be non available (we don't need to show NA to the user)
-              if (!is.null(input$details_button)) {
-                df = dat()
-                str1 <- paste(df$Fullname[as.numeric(input$details_button)],", ",unique(df$Department[as.numeric(input$details_button)]))
-                str2 <- paste(na.omit(unique(df$email[as.numeric(input$details_button)])))  # @Sophie: why unique here? - don't know :)
-                str3 <- paste("My Skills:   ",unique(df$Skills[as.numeric(input$details_button)]))
-                str4 <- paste(na.omit(unique(data$Skills_details[as.numeric(input$details_button)])))
-                str5 <- paste("My Needs:    ",unique(df$Needs[as.numeric(input$details_button)]))
-                str6 <- paste(na.omit(unique(data$Needs_details[as.numeric(input$details_button)])))
-                HTML(paste(str1,str2," ",str3,str4," ",str5,str6,sep = '<br/>'))
-              }
-            })
-          ))
+          session$sendCustomMessage(type = "resetValue", message = "current_node_id")
+          session$sendCustomMessage(type = "resetValue", message = "details_button")
         })
         
+        observeEvent(input$BUTedit, {
+          df = dat()
+          num = as.numeric(input$details_button)
+          showModal(modalDialog(
+            title = "Edit Data",
+            textInput("Skill2", "New Skill",  value = as.character(df[num, 5]), placeholder = as.character(df[num, 5])),
+            textInput("Skill_detail2", "Skill in detail", value = as.character(df[num, 8]), placeholder = as.character(df[num, 8])),
+            textInput("Need2", "New Need", value = as.character(df[num, 6]), placeholder = as.character(df[num, 6])),
+            textInput("Need_detail2", "Need in detail",value = as.character(df[num, 7]), placeholder = as.character(df[num, 7])),
+            footer = tagList(
+              actionButton("Editsubmit", "Submit")
+            )
+          ))
+ })
+
         ### Functions ####
         saveData <- function(data) {
           # Grab the Google Sheet
