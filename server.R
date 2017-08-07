@@ -330,6 +330,8 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
         })   
         
         ### Detailed view of user##### 
+        value <- reactiveValues()
+        
         observeEvent(c(
           input$details_button,
           input$current_node_id
@@ -352,20 +354,22 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
             }),
             footer = modalButton("close"),actionButton("BUTedit","Edit data")
           ))
+          value$current <- current
           session$sendCustomMessage(type = "resetValue", message = "current_node_id")
           session$sendCustomMessage(type = "resetValue", message = "details_button")
         })
         
         observeEvent(input$BUTedit, {
           df = dat()
-          num = as.numeric(input$details_button)
+          current = value$current
           showModal(modalDialog(
             title = "Edit Data",
-            textInput("Skill2", "New Skill",  value = as.character(df[num, 5]), placeholder = as.character(df[num, 5])),
-            textInput("Skill_detail2", "Skill in detail", value = as.character(df[num, 8]), placeholder = as.character(df[num, 8])),
-            textInput("Need2", "New Need", value = as.character(df[num, 6]), placeholder = as.character(df[num, 6])),
-            textInput("Need_detail2", "Need in detail",value = as.character(df[num, 7]), placeholder = as.character(df[num, 7])),
+            textInput("Skill2", "New Skill",  value = as.character(df[current, 5]), placeholder = as.character(df[current, 5])),
+            textInput("Skill_detail2", "Skill in detail", value = as.character(df[current, 8]), placeholder = as.character(df[current, 8])),
+            textInput("Need2", "New Need", value = as.character(df[current, 6]), placeholder = as.character(df[current, 6])),
+            textInput("Need_detail2", "Need in detail",value = as.character(df[current, 7]), placeholder = as.character(df[current, 7])),
             footer = tagList(
+              modalButton("Cancel"),
               actionButton("Editsubmit", "Submit")
             )
           ))
