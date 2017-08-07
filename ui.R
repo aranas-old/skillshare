@@ -5,6 +5,11 @@ library(plotly)
 require(visNetwork, quietly = TRUE)
 
 shinyUI(fluidPage(
+  tags$script("
+              Shiny.addCustomMessageHandler('resetValue', function(variableName) {
+                 Shiny.onInputChange(variableName, null);
+              });
+          "),
   useShinyjs(),  # Include shinyjs
   titlePanel(title=div(img(src="images/combined_logos.png", height= 90),"Skillshare Database")),
   fluidRow(
@@ -44,20 +49,20 @@ shinyUI(fluidPage(
                       textInput("Need", "Need", ""),
                       textInput("Need_detail", "Need in detail", ""),
                       textInput("Department", "Department", ""),
-                      actionButton("submit", "Submit")),
+                      actionButton("submit", "Submit"))
                     #pop-up when "Edit Data" is clicked
-                    actionButton("BUTedit", "Edit Data"),
-                    bsModal("modaledit", "Edit data", "BUTedit", size = "small",
-                      HTML("Please fill in your last name:"),
-                      textInput("Last_Name2", "Last Name", ""),
-                    actionButton("BUTsubmit", "Submit")),
-                    bsModal("modaledit2", "Edit data", "BUTsubmit", size = "small",
-                              HTML("Please update your information (please be patient, saving data may take some time):"),
-                              textInput("Skill2", "New Skill", value = "",placeholder = "enter all your skills"),
-                              textInput("Skill_detail2", "Skill in detail", "",placeholder = " "),
-                              textInput("Need2", "New Need", value = "",placeholder = "enter all your needs"),
-                              textInput("Need_detail2", "Need in detail","",placeholder = " "),
-                              actionButton("Editsubmit", "Submit"))
+                    #actionButton("BUTedit", "Edit Data"),
+                    #bsModal("modaledit", "Edit data", "BUTedit", size = "small",
+                    #  HTML("Please fill in your last name:"),
+                    #  textInput("Last_Name2", "Last Name", ""),
+                    #actionButton("BUTsubmit", "Submit")),
+                    #bsModal("modaledit2", "Edit data", "BUTsubmit", size = "small",
+                    #          HTML("Please update your information (please be patient, saving data may take some time):"),
+                    #          textInput("Skill2", "New Skill", value = "",placeholder = "enter all your skills"),
+                    #          textInput("Skill_detail2", "Skill in detail", "",placeholder = " "),
+                    #          textInput("Need2", "New Need", value = "",placeholder = "enter all your needs"),
+                    #          textInput("Need_detail2", "Need in detail","",placeholder = " "),
+                    #          actionButton("Editsubmit", "Submit"))
        
                       )
               )
