@@ -13,7 +13,7 @@ useShinyjs() # Include shinyjs
 ### Set variables #####
 fields <- c("First_Name","Last_Name","email","Skill","Skill_detail","Need","Need_detail","Department","Skill2", "Skill_detail2", "Need2", "Need_detail2")
 table <- "reciprocity_database"
-worksheet <- "examplar"
+worksheet <- "examplar" # "data_form"
 
 ### Set password #####
 Logged = TRUE; # TEMP, removed password procedure for debugging purposes
@@ -139,14 +139,12 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
           string_to_list <- function(x){trim(unlist(strsplit(x, ",")))}
           
           skills <- uppercase_first(remove_NA(string_to_list(datanet$Skills))) # reads ALL skills into a list
-          needs <- uppercase_first(remove_NA(string_to_list(datanet$Needs))) # reads ALL needs
-          
-          needs_processed <- c()  # reads Needs column and processes each line separately
+          needs <- c()  # reads Needs column and processes each line separately
           for (row in 1:nrow(datanet)){
             if (is.na(datanet$Needs[row])){
-              needs_processed <- rbind(needs_processed, '')  # participant has no needs but we need to keep the row, so rbind it
+              needs <- rbind(needs, '')  # participant has no needs but we need to keep the row, so rbind it
             } else {
-              needs_processed <- rbind(needs_processed, paste(uppercase_first(string_to_list(datanet$Needs[row])), collapse = ","))
+              needs <- rbind(needs, paste(uppercase_first(string_to_list(datanet$Needs[row])), collapse = ","))
             }
           }
           
@@ -156,7 +154,7 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
             currentneed <- uppercase_first(remove_NA(string_to_list((datanet$Needs[row]))))
             for (nskill in currentskill) {
               combined <- 0
-              to_ind <- grep(paste("(^|,| ,)", nskill, "($|,)", sep = ""), needs_processed, ignore.case=TRUE)
+              to_ind <- grep(paste("(^|,| ,)", nskill, "($|,)", sep = ""), needs, ignore.case=TRUE)
               if (length(to_ind)>0){  # first check if skill is needed
                 to <- datanet$Fullname[to_ind]
                 from <- rep(datanet$Fullname[row], length(to))
@@ -190,7 +188,7 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
           }
           nodes <- cbind(nodes, data.frame(Connections = count))
           
-          graphinfo <- list(nodes = nodes, df_pairs = df_pairs, skills = skills, needs = needs_processed) # concatenate all variables that should be accessed elsewhere in code
+          graphinfo <- list(nodes = nodes, df_pairs = df_pairs, skills = skills, needs = needs) # concatenate all variables that should be accessed elsewhere in code
           graphinfo
         })
         
@@ -231,7 +229,7 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
                        #nodesIdSelection = TRUE
                        #selectedBy = list(variable = "Skills")
             ) %>%
-            visInteraction(hover = T, hoverConnectedEdges = T, dragNodes = FALSE, zoomView = FALSE) %>%
+            visInteraction(hover = TRUE, hoverConnectedEdges = TRUE, dragNodes = FALSE, zoomView = FALSE, tooltipDelay = 150) %>%
             visEvents(click = "function(nodes){ Shiny.onInputChange('current_node_id', nodes.nodes); }")
         })
         
@@ -282,23 +280,17 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
         })
         
         ### pie plots ##### 
-        #TODO: Need to plot frequencies according to skill_frequency now
         #TODO: plots should update together with graph and table when new data is submitted
-        output$piePlot1 <- renderPlotly({
+        output$piePlotSkills <- renderPlotly({
           graphinfo <- nodes_pairs()
-          skills_sort <- graphinfo$skills_sort
-          skills_sort <- sort(skills_sort)
-          tmpdata <-as.data.frame(table(skills_sort))
-          rownames(tmpdata) = tmpdata$skills_sort
-          colors1 = c(color = brewer.pal(length(unique(needs)),"Pastel1")) # colors do not correspond to colors in network graph
-          plot_ly(tmpdata, labels = ~skills_sort, values = ~Freq, type = 'pie',
+          frequencies <-as.data.frame(table(graphinfo$skills))
+          plot_ly(frequencies, labels = ~Var1, values = ~Freq, type = 'pie',
                   textposition = 'inside',
                   textinfo = 'percent',
                   #insidetextfont = list(color='#FFFFFF'),
                   hoverinfo = 'text',
-                  mode = 'text',
-                  text = tmpdata$skills_sort,
-                  marker = list(colors = colors1,
+                  text = frequencies$Var1,
+                  marker = list(colors = c(color = brewer.pal(length(frequencies$Var1),"Pastel1")), # colors do not correspond to colors in network graph
                                 line = list(color = '#FFFFFF', width = 5)),
                   showlegend = TRUE
           ) %>%
@@ -307,26 +299,24 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
                    yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
         })
         
-        # TODO: Need to plot needs according to needs_frequency
-        output$piePlot2 <- renderPlotly({
+        output$piePlotNeeds <- renderPlotly({
           graphinfo <- nodes_pairs()
-          needs <- graphinfo$needs
-          tmpdata <-as.data.frame(table(needs))
-          rownames(tmpdata) = tmpdata$needs
-          colors2 = c(color = brewer.pal(length(unique(needs)),"YlGnBu"))
-          plot_ly(tmpdata, labels = ~needs, values = ~Freq, type = 'pie',
+          needs <- unlist(strsplit(graphinfo$needs, ","))
+          frequencies <-as.data.frame(table(needs))
+          #rownames(frequencies) = frequencies$needs
+          plot_ly(frequencies, labels = frequencies$needs, values = ~Freq, type = 'pie',
                   textposition = 'inside',
                   textinfo = 'percent',
-                  #insidetextfont = list(color='#FFFFFF'),
+                  #insidetextfont = list(color='#FFFFFF'), # leave black font color
                   hoverinfo = 'text',
-                  text = tmpdata$needs,
-                  marker = list(colors = colors2,
+                  text = frequencies$needs,
+                  marker = list(colors = c(color = brewer.pal(length(frequencies$needs),"Pastel1")),
                                 line = list(color = '#FFFFFF', width = 5)),
                   showlegend = TRUE
           ) %>%
-            layout(title = 'Needs',
-                   xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
-                   yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+          layout(title = 'Needs',
+                 xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+                 yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
         })   
         
         ### Detailed view of user##### 

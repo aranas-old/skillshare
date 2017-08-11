@@ -16,7 +16,7 @@ shinyUI(fluidPage(
     column(6,
            tagList(
              tags$head(
-               tags$link(rel="stylesheet", type="text/css"),#,href="style.css"),
+               tags$link(rel="stylesheet", type="text/css"),#href="style.css"), through css we can make the text smaller
                tags$script(type="text/javascript", src = "md5.js"),
                tags$script(type="text/javascript", src = "passwdInputBinding.js")
              )
@@ -33,9 +33,9 @@ shinyUI(fluidPage(
            tabPanel("Table",
                     DT::dataTableOutput("database", width = 400), tags$hr()),
            tabPanel("Statistics",
-                    splitLayout(cellHeights = c("50%", "50%"),
-                    plotlyOutput("piePlot1"),
-                    plotlyOutput("piePlot2"))),
+                    splitLayout(#width="100%", #cellHeights = c("100%", "100%"),
+                                plotlyOutput("piePlotSkills"),
+                                plotlyOutput("piePlotNeeds"))),
            tabPanel("Form",
                     actionButton("BUTadd", "Add Data"),
                     #pop-up when "Add Data" is clicked
