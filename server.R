@@ -13,7 +13,7 @@ useShinyjs() # Include shinyjs
 ### Set variables #####
 fields <- c("First_Name","Last_Name","email","Skill","Skill_detail","Need","Need_detail","Department","Skill2", "Skill_detail2", "Need2", "Need_detail2")
 table <- "reciprocity_database"
-worksheet <- "examplar" # "data_form"
+worksheet <- "data_form" # "examplar"
 
 ### Set password #####
 Logged = TRUE; # TEMP, removed password procedure for debugging purposes
@@ -98,6 +98,15 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
           toggleModal(session, "modaledit2", toggle = "close")
         })
       
+        # helper functions to handle text
+        trim <- function (x) gsub("^\\s+|\\s+$", "", x) # returns string w/o leading or trailing whitespace
+        uppercase_first <- function(x){  # we can uppercase the first letter, it's only for aesthetics
+          substr(x, 1, 1) <- toupper(substr(x, 1, 1))
+          x
+        }
+        remove_NA <- function(x){x[!is.na(x)]}
+        string_to_list <- function(x){trim(unlist(strsplit(x, ",")))}
+        
         ### Table #####   
         # have datatable content as reactive value to be accessed later (i.e. pop-up for details)
         # update with every submit/edit
@@ -130,14 +139,6 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
           df_pairs <- data.frame()
           nodes <- data.frame()
           
-          trim <- function (x) gsub("^\\s+|\\s+$", "", x) # returns string w/o leading or trailing whitespace
-          uppercase_first <- function(x){  # we can uppercase the first letter, it's only for aesthetics
-            substr(x, 1, 1) <- toupper(substr(x, 1, 1))
-            x
-          }
-          remove_NA <- function(x){x[!is.na(x)]}
-          string_to_list <- function(x){trim(unlist(strsplit(x, ",")))}
-          
           skills <- uppercase_first(remove_NA(string_to_list(datanet$Skills))) # reads ALL skills into a list
           needs <- c()  # reads Needs column and processes each line separately
           for (row in 1:nrow(datanet)){
@@ -147,7 +148,7 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
               needs <- rbind(needs, paste(uppercase_first(string_to_list(datanet$Needs[row])), collapse = ","))
             }
           }
-          
+
           # now go through each participant row (we can force 1 line/participant, and remove "unique").
           for (row in 1:nrow(datanet)){
             currentskill <- uppercase_first(remove_NA(string_to_list(datanet$Skills[row])))
@@ -229,7 +230,7 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
                        #nodesIdSelection = TRUE
                        #selectedBy = list(variable = "Skills")
             ) %>%
-            visInteraction(hover = TRUE, hoverConnectedEdges = TRUE, dragNodes = FALSE, zoomView = FALSE, tooltipDelay = 150) %>%
+            visInteraction(hover = TRUE, hoverConnectedEdges = TRUE, dragNodes = FALSE, zoomView = FALSE, tooltipDelay = 150, dragView = FALSE) %>%
             visEvents(click = "function(nodes){ Shiny.onInputChange('current_node_id', nodes.nodes); }")
         })
         
