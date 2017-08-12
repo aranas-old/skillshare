@@ -36,14 +36,13 @@ shinyUI(fluidPage(
                     splitLayout(#width="100%", #cellHeights = c("100%", "100%"),
                                 plotlyOutput("piePlotSkills"),
                                 plotlyOutput("piePlotNeeds"))),
-           tabPanel("Form",
+           tabPanel("Form",  #pop-up when "Add Data" is clicked
                     actionButton("BUTadd", "Add Data"),
-                    #pop-up when "Add Data" is clicked
                     bsModal("modaladd", "Add data", "BUTadd", size = "small",
-                      HTML("Please fill in this form and press submit in order to add your data"),
+                      HTML("Please fill in this form and press submit"),
                       textInput("First_Name", "First Name", ""),
                       textInput("Last_Name", "Last Name", ""),
-                      textInput("email", "email", ""),
+                      textInput("Email", "Email", ""),
                       textInput("Skill", "Skill", ""),
                       textInput("Skill_detail", "Skill in detail", ""),
                       textInput("Need", "Need", ""),
@@ -67,11 +66,11 @@ shinyUI(fluidPage(
                       )
               )
     ))
-  ,
-  fluidRow(
-    column(4,
-           helpText('Click on one of the dot to get more details about individual: '), 
-           htmlOutput("data_individual"))
-  )
+  #,
+  # fluidRow(  # TODO: Move this info to an "About" page
+  #   column(4,
+  #          helpText('Click on one of the dot to get more details about individual: '), 
+  #          htmlOutput("data_individual"))
+  # )
   )
 )
