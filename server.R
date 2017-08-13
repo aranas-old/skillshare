@@ -355,9 +355,11 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
           current = value$current
           showModal(modalDialog(
             title = "Edit Data",
-            textInput("Skill2", "New Skill",  value = as.character(df[current, 5]), placeholder = as.character(df[current, 5])),
+            selectInput("Skill2", "New Skill", choices = df$Skills, selected = as.character(df[current, 5]), multiple = TRUE,
+                        selectize = TRUE, width = NULL, size = NULL),
             textInput("Skill_detail2", "Skill in detail", value = as.character(df[current, 8]), placeholder = as.character(df[current, 8])),
-            textInput("Need2", "New Need", value = as.character(df[current, 6]), placeholder = as.character(df[current, 6])),
+            selectInput("Need2","New Need", choices = df$Needs, selected = as.character(df[current, 6]), multiple = TRUE,
+                        selectize = TRUE, width = NULL, size = NULL),
             textInput("Need_detail2", "Need in detail",value = as.character(df[current, 7]), placeholder = as.character(df[current, 7])),
             footer = tagList(
               modalButton("Cancel"),
