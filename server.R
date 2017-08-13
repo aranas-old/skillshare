@@ -355,10 +355,12 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
           current = value$current
           showModal(modalDialog(
             title = "Edit Data",
-            selectInput("Skill2", "New Skill", choices = df$Skills, selected = as.character(df[current, 5]), multiple = TRUE,
+            selectInput("skill", "New Skill", choices = df$Skills, selected = as.character(df[current, 5]), multiple = TRUE,
                         selectize = TRUE, width = NULL, size = NULL),
+            conditionalPanel( condition = "input.skill == 'Other'",
+                              textInput("new_keyword","New Keyword", value = NULL, placeholder = NULL)),
             textInput("Skill_detail2", "Skill in detail", value = as.character(df[current, 8]), placeholder = as.character(df[current, 8])),
-            selectInput("Need2","New Need", choices = df$Needs, selected = as.character(df[current, 6]), multiple = TRUE,
+            selectInput("Need","New Need", choices = df$Needs, selected = as.character(df[current, 6]), multiple = TRUE,
                         selectize = TRUE, width = NULL, size = NULL),
             textInput("Need_detail2", "Need in detail",value = as.character(df[current, 7]), placeholder = as.character(df[current, 7])),
             footer = tagList(
@@ -366,7 +368,9 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
               actionButton("Editsubmit", "Submit")
             )
           ))
- })
+      })
+        
+
 
         ### Functions ####
         saveData <- function(data) {
