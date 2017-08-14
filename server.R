@@ -9,11 +9,11 @@ library(DT)
 require(shiny)
 library(shinyjs)
 library(shinyBS)
-useShinyjs() # Include shinyjs
+useShinyjs()
+
 ### Set variables #####
-fields <- c("First_Name","Last_Name","email","Skill","Skill_detail","Need","Need_detail","Department","Skill2", "Skill_detail2", "Need2", "Need_detail2")
-table <- "reciprocity_database"
-worksheet <- "data_form" # "examplar"
+fields <- c("Timestamp", "First_Name","Last_Name","Email","Skill","Skill_detail","Need","Need_detail","Department")
+database_fname <- "data"
 
 ### Set password #####
 Logged = TRUE; # TEMP, removed password procedure for debugging purposes
@@ -25,18 +25,16 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
     
     observe({
       if (USER$Logged == TRUE) {
-        
         ### Form #####
         # Whenever a form is filled, aggregate all form data & add timestamp at beginning
         formData <- reactive({
-          datain <- sapply(fields, function(x) input[[x]]) #concatenate all input fields
-          datain <- c(datain,Timestamp = Sys.time()) #timestamp does not work properly yet, but would be nice to have this info in the google sheets
-          datain <- datain[c(9,1,2,3,4,5,6,7,8)] #putting timestamp at the beginning - must be an easier way to do this?
+          datain <- sapply(fields, function(x) input[[x]])
+          datain$Timestamp <- format(Sys.time(), "%a %b %d %X %Y %Z")
           datain
         })
         # Only activate Submit button when name and email is provided
         observe({
-          shinyjs::toggleState("submit", !is.null(input$First_Name) && input$First_Name != "" && !is.null(input$email) && input$email != "")
+          shinyjs::toggleState("submit", !is.null(input$First_Name) && input$First_Name != "" && !is.null(input$Email) && input$Email != "")
         })
         
         # When the Submit button is clicked, save the form data
@@ -76,10 +74,10 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
           }
           
           # TODO: display data that person entered before
-          updatePlaceholder("Skill2", label = "New Skill", value = as.character(df[num, 5]), placeholder = as.character(df[num, 5]))
-          updatePlaceholder("Need2", label = "New Need", value = as.character(df[num, 6]), placeholder = as.character(df[num, 6]))
-          updatePlaceholder("Skill_detail2", label = "Skills in detail", value = as.character(df[num, 8]), placeholder = as.character(df[num, 8]))
-          updatePlaceholder("Need_detail2", label = "Need in detail", value = as.character(df[num, 7]), placeholder = as.character(df[num, 7]))
+          #updatePlaceholder("Skill2", label = "New Skill", value = as.character(df[num, 5]), placeholder = as.character(df[num, 5]))
+          #updatePlaceholder("Need2", label = "New Need", value = as.character(df[num, 6]), placeholder = as.character(df[num, 6]))
+          #updatePlaceholder("Skill_detail2", label = "Skills in detail", value = as.character(df[num, 8]), placeholder = as.character(df[num, 8]))
+          #updatePlaceholder("Need_detail2", label = "Need in detail", value = as.character(df[num, 7]), placeholder = as.character(df[num, 7]))
           })
         
         observeEvent(input$Editsubmit,{
@@ -138,7 +136,6 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
           #find pairs of people where skills match needs and create new table with one row per pair (with repetitions)
           df_pairs <- data.frame()
           nodes <- data.frame()
-          
           skills <- uppercase_first(remove_NA(string_to_list(datanet$Skills))) # reads ALL skills into a list
           needs <- c()  # reads Needs column and processes each line separately
           for (row in 1:nrow(datanet)){
@@ -336,7 +333,7 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
             title= "Details",
             renderUI({  # added na.omit on values that could be non available (we don't need to show NA to the user)
                 str1 <- paste(df$Fullname[current],", ",unique(df$Department[current]))
-                str2 <- paste(na.omit(unique(df$email[current])))  # @Sophie: why unique here? - don't know :)
+                str2 <- paste(na.omit(unique(df$Email[current])))  # @Sophie: why unique here? - don't know :)
                 str3 <- paste("My Skills:   ",unique(df$Skills[current]))
                 str4 <- paste(na.omit(unique(data$Skills_details[current])))
                 str5 <- paste("My Needs:    ",unique(df$Needs[current]))
@@ -350,6 +347,7 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
           session$sendCustomMessage(type = "resetValue", message = "details_button")
         })
         
+
         observeEvent(input$BUTedit, {
           df = dat()
           current = value$current
@@ -370,39 +368,35 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
           ))
       })
         
-
-
-        ### Functions ####
+        ### Read/Write Database ### 
         saveData <- function(data) {
-          # Grab the Google Sheet
-          sheet <- gs_title(table)
-          # Add the data as a new row
-          gs_add_row(sheet, ws = worksheet,input = data)
+          data <- t(data)
+          cat("\n", file=sprintf("db/%s.csv", database_fname), append=TRUE) # append new line to file
+          write.table(x = data, file = sprintf("db/%s.csv", database_fname), 
+                      quote = c(1,2,3,4,5,6,7,8,9), append = TRUE, sep=",", col.names = F, row.names = F)  # FIXME: quote = T(RUE) didn't add quotes around fields so I resolved to the c(1,2...) solution. 
         }
         
         loadData <- function() {
-          # Grab the Google Sheet
-          sheet <- gs_title(table)
-          # Read the data
-          database <- gs_read_csv(sheet,ws = worksheet)
-          database
+          data <- read.csv(file=sprintf("db/%s.csv", database_fname), head=TRUE, sep=",", stringsAsFactors=FALSE)
+          data
         }
         
-        editData <- function(num1,num2,num3,num4) {
-          #  Grab the Google Sheet
-          sheet <- gs_title(table)
-          #  Edit the data
-          database <- gs_edit_cells(sheet, ws = worksheet, input = input$Skill2, anchor = num1)
-          database <- gs_edit_cells(sheet, ws = worksheet, input = input$Skill_detail2, anchor = num2)
-          database <- gs_edit_cells(sheet, ws = worksheet, input = input$Need2, anchor = num3)
-          database <- gs_edit_cells(sheet, ws = worksheet, input = input$Need_detail2, anchor = num4)
-          database
-        }
+        # GeditData <- function(num1,num2,num3,num4) {
+        #   #  Grab the Google Sheet
+        #   sheet <- gs_title(table)
+        #   #  Edit the data
+        #   database <- gs_edit_cells(sheet, ws = worksheet, input = input$Skill2, anchor = num1)
+        #   database <- gs_edit_cells(sheet, ws = worksheet, input = input$Skill_detail2, anchor = num2)
+        #   database <- gs_edit_cells(sheet, ws = worksheet, input = input$Need2, anchor = num3)
+        #   database <- gs_edit_cells(sheet, ws = worksheet, input = input$Need_detail2, anchor = num4)
+        #   database
+        # }
         
-        updatePlaceholder <- function(inputId, label = NULL, value = NULL, placeholder = NULL) {
-          message <- list(label=label, value=value, placeholder=placeholder)
-          session$sendInputMessage(inputId, message)
-        }
+        # updatePlaceholder <- function(inputId, label = NULL, value = NULL, placeholder = NULL) {
+        #   message <- list(label=label, value=value, placeholder=placeholder)
+        #   session$sendInputMessage(inputId, message)
+        # }
+        
         #for "Detail" button
         shinyInput <- function(FUN, len, id, ...) {
           inputs <- character(len)
