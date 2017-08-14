@@ -13,6 +13,7 @@ useShinyjs()
 
 ### Set variables #####
 fields <- c("Timestamp", "First_Name","Last_Name","Email","Skill","Skill_detail","Need","Need_detail","Department")
+database_fname <- "data"
 
 ### Set password #####
 Logged = TRUE; # TEMP, removed password procedure for debugging purposes
@@ -346,21 +347,28 @@ PASSWORD <- data.frame(Brukernavn = "imprs", Passord = "6289384392e39fe85938d7bd
           session$sendCustomMessage(type = "resetValue", message = "details_button")
         })
         
-       #  observeEvent(input$BUTedit, {
-       #    df = dat()
-       #    current = value$current
-       #    showModal(modalDialog(
-       #      title = "Edit Data",
-       #      textInput("Skill2", "New Skill",  value = as.character(df[current, 5]), placeholder = as.character(df[current, 5])),
-       #      textInput("Skill_detail2", "Skill in detail", value = as.character(df[current, 8]), placeholder = as.character(df[current, 8])),
-       #      textInput("Need2", "New Need", value = as.character(df[current, 6]), placeholder = as.character(df[current, 6])),
-       #      textInput("Need_detail2", "Need in detail",value = as.character(df[current, 7]), placeholder = as.character(df[current, 7])),
-       #      footer = tagList(modalButton("Cancel"), actionButton("Editsubmit", "Submit"))
-       #    ))
-       # })
 
+        observeEvent(input$BUTedit, {
+          df = dat()
+          current = value$current
+          showModal(modalDialog(
+            title = "Edit Data",
+            selectInput("skill", "New Skill", choices = df$Skills, selected = as.character(df[current, 5]), multiple = TRUE,
+                        selectize = TRUE, width = NULL, size = NULL),
+            conditionalPanel( condition = "input.skill == 'Other'",
+                              textInput("new_keyword","New Keyword", value = NULL, placeholder = NULL)),
+            textInput("Skill_detail2", "Skill in detail", value = as.character(df[current, 8]), placeholder = as.character(df[current, 8])),
+            selectInput("Need","New Need", choices = df$Needs, selected = as.character(df[current, 6]), multiple = TRUE,
+                        selectize = TRUE, width = NULL, size = NULL),
+            textInput("Need_detail2", "Need in detail",value = as.character(df[current, 7]), placeholder = as.character(df[current, 7])),
+            footer = tagList(
+              modalButton("Cancel"),
+              actionButton("Editsubmit", "Submit")
+            )
+          ))
+      })
+        
         ### Read/Write Database ### 
-        database_fname <- "data" # "examplar"
         saveData <- function(data) {
           data <- t(data)
           cat("\n", file=sprintf("db/%s.csv", database_fname), append=TRUE) # append new line to file
