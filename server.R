@@ -171,7 +171,7 @@ function(input, output, session) {
             visIgraphLayout(layout = "layout_in_circle") %>%
             visOptions(highlightNearest = FALSE) %>%  #nodesIdSelection = TRUE #selectedBy = list(variable = "Skills")
             visInteraction(hover = TRUE, hoverConnectedEdges = TRUE, dragNodes = FALSE, zoomView = FALSE, tooltipDelay = 150, dragView = FALSE) %>%
-            visEvents(click = "function(nodes){ Shiny.onInputChange('current_node_id', nodes.id); }") #nodes.nodes); }")
+            visEvents(click = "function(nodes){ Shiny.onInputChange('current_node_id', nodes.nodes); }")
         })
 
         output$network <- renderVisNetwork({
@@ -265,7 +265,7 @@ function(input, output, session) {
         observeEvent(c(input$details_button,input$current_node_id), {
                           df = dat()
                           if (!is.null(input$current_node_id)) {
-                            current = which(df$Fullname==input$current_node_id)
+                            current = which(df$fullName==input$current_node_id)
                           } else {
                             current = as.numeric(input$details_button)
                           }
