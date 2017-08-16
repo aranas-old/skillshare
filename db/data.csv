@@ -1,4 +1,4 @@
-Timestamp,First_Name,Last_Name,email,Skills,Needs,Needs_details,Skills_details,Department
+timestamp,firstName,lastName,email,skills,needs,needsDetails,skillsDetails,department
 6/18/2017 15:03:47,Mat,Student,mat@demo.com,EEG,moving house,need some strong arms in august,I can teach you how to set up the EEG lab,CLS
 6/17/2017,Lara,Croft,lara@demo.com,baking,EEG,need help with anovas,"I'm great with baking, will offer homemade cookies for received help",Language & Genetics
 6/18/2017 14:24:42,Sophie,Arana,sophie.arana@mpi.nl,MATLAB,"statistics, baking",need help with regression,added some detail,Neurobiology of Language
@@ -21,6 +21,3 @@ Timestamp,First_Name,Last_Name,email,Skills,Needs,Needs_details,Skills_details,D
 ,Johanna,de Vos,"Johanna.deVos@mpi.nl, j.devos@donders.ru.nl","LMER,Rprogramming","washingmachine,catsitter,career",,advise or leads on jobs as study counsellor,
 ,Xiaochen,Zheng,Xiaochen.Zheng@mpi.nl,programming,Rprogramming,,looking at my R script for linear mixed effects,
 ,Saoradh,Favier,Saoradh.Favier@mpi.nl,none,"Dutch speaker,Yoga",,"need help handing out flyers at AH (ideallly for 2 weekdays afternoons in august/july, would like to learn some basic yoga",
-"Sat Aug 12 09:58:51 2017 PDT","Chara","Tsou","Chara@tsou.ka","R, Python, numpy, matplotlib","","Japanese","",CLS
-
-"Sun Aug 13 20:45:29 2017 PDT","Hara","Tsoukala","hara@ha.ra","R, Matlab","","Dutch","","CLS"
