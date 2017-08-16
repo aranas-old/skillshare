@@ -29,7 +29,6 @@ dbrowcount = dbGetQuery(sql_db, "SELECT COUNT(*) FROM skillshare")
 dbDisconnect(sql_db)
 
 csvrowcount <- nrow(originalcsv)
-
 # Just to make sure that the numbers of the SQLite data and the CSV rows match
 csvrowcount
 dbrowcount

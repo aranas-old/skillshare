@@ -41,11 +41,41 @@ function(input, output, session) {
         })
 
         observeEvent(input$submitEdit,{
-          editData()
-          removeModal()  # close pop-up when submit button is clicked
-          # # find row that belongs to the last name that was entered by person
-          # num <- 1+which(tolower(as.character(database$lastName)) == tolower(as.character(input$Last_Name2)))
-          #toggleModal(session, "modaledit", toggle = "close")  # close pop-up when submit button is clicked
+          userInfo <- getUserInfo(value$current)
+          changes = c()
+          # @Sophie, I couldn't figure out quickly how to only keep track of the form edits so I followed this ugly approach: added suffix _edited to all form units and 
+          # compared values to the ones stored in the db. Really ugly, but not urgent to be fixed. Do you know a better solution w/o spending more than 10' on this?
+          if (userInfo$firstName != input$firstName_edited){
+            changes = c(changes, sprintf("firstName = '%s'", input$firstName_edited))
+          }
+          if (userInfo$lastName != input$lastName_edited){
+            changes = c(changes, sprintf("lastName = '%s'", input$lastName_edited))
+          }
+          if (userInfo$email != input$email_edited){
+            changes = c(changes, sprintf("email = '%s'", input$email_edited))
+          }
+          edited_skill = paste(input$skills_edited, collapse=", ")
+          if (paste(userInfo$skills, collapse=", ") != edited_skill){
+            changes = c(changes, sprintf("skills = '%s'", edited_skill))
+          }
+          if (userInfo$skillsDetail != input$skillsDetail_edited){
+            changes = c(changes, sprintf("skillsDetail = '%s'", input$skillsDetail_edited))
+          }
+          edited_need = paste(input$needs_edited, collapse=", ")
+          if (paste(userInfo$needs, collapse=", ") != edited_need){
+            changes = c(changes, sprintf("needs = '%s'", edited_need))
+          }
+          if (userInfo$needsDetail != input$needsDetail_edited){
+            changes = c(changes, sprintf("needsDetail = '%s'", input$needsDetail_edited))
+          }
+          if (userInfo$department != input$department_edited){
+            changes = c(changes, sprintf("department = '%s'", input$department_edited))
+          }
+          changes = paste(changes, collapse=", ")
+          if (changes != ''){  # only update SQL if there are changes
+              editData(changes, value$current)
+          }
+          removeModal()  # close pop-up when submit button is clicked #toggleModal(session, "modaledit", toggle = "close")
         })
 
         # helper functions to handle text
@@ -263,22 +293,23 @@ function(input, output, session) {
         value <- reactiveValues()
 
         observeEvent(c(input$details_button,input$current_node_id), {
-                          df = dat()
-                          if (!is.null(input$current_node_id)) {
+                          if (!is.null(input$current_node_id)) {  # when user clicks on network nodes
+                            df = dat()  # TODO: Change current_node_id into the row id to avoid the extra search
                             current = which(df$fullName==input$current_node_id)
-                          } else {
+                          } else {  # when user clicks on table "Details" button
                             current = as.numeric(input$details_button)
                           }
+                          userInfo <- getUserInfo(current)
                           showModal(modalDialog(
-                            title= paste(df$fullName[current],", ",df$department[current]),
+                            title= sprintf("%s (%s)", userInfo$fullName, userInfo$email),
                             renderUI({  # added na.omit on values that could be non available (we don't need to show NA to the user)
-                                if (!is.na(df$needs[current])){
-                                  needs <- paste("Needs:", df$needs[current])
+                                if (!is.na(userInfo$needs)){
+                                  needs <- paste("Needs:", userInfo$needs)
                                 } else {
                                   needs <- ""
                                 }
-                                HTML(sprintf("E-mail: %s </br> Skills: %s </br> %s </br> %s </br> %s</br></br>",  #TODO: Really ugly UI, fix
-                                             df$email[current], df$skills[current], na.omit(df$skillsDetail[current]), needs, df$needsDetail[current]))
+                                HTML(sprintf("Skills: %s </br> %s </br> %s </br> %s</br>Department: %s</br>",  #TODO: Really ugly UI, fix
+                                            userInfo$skills, na.omit(userInfo$skillsDetail), needs, userInfo$needsDetail, userInfo$department))
                             }),
                             footer = modalButton("close"),actionButton("buttonEdit","Edit data")
                           ))
@@ -291,28 +322,22 @@ function(input, output, session) {
             df = dat()
             current = value$current
             showModal(modalDialog(
-                title = "Edit Data",
-                textInput("firstName", "First Name", value = as.character(df[current, 2]), placeholder = as.character(df[current, 2])),
-                textInput("lastName", "Last Name", value = as.character(df[current, 3]), placeholder = as.character(df[current, 3])),
-                textInput("email", "Email", value = as.character(df[current, 4]), placeholder = as.character(df[current, 4])),
-                selectInput("skill", "Skills", choices = df$skills, selected = as.character(df[current, 5]), multiple = TRUE,
+                title = sprintf("Edit Data for: %s", df[current, 10]),
+                textInput("firstName_edited", "First Name", value = as.character(df[current, 2]), placeholder = as.character(df[current, 2])), 
+                textInput("lastName_edited", "Last Name", value = as.character(df[current, 3]), placeholder = as.character(df[current, 3])),
+                textInput("email_edited", "Email", value = as.character(df[current, 4]), placeholder = as.character(df[current, 4])),
+                selectInput("skills_edited", "Skills", choices = df$skills, selected = as.character(df[current, 5]), multiple = TRUE,
                             selectize = TRUE, width = NULL, size = NULL),
                 conditionalPanel(condition = "input.skills == 'Other'",
                                  textInput("new_keyword","New Keyword", value = NULL, placeholder = NULL)),
-                textInput("skillDetail", "(Optional) comments on skills", value = as.character(df[current, 8]), placeholder = as.character(df[current, 8])),
-                selectInput("needs", "Needs", choices = df$needs, selected = as.character(df[current, 6]), multiple = TRUE,
+                textInput("skillsDetail_edited", "(Optional) comments on skills", value = as.character(df[current, 8]), placeholder = as.character(df[current, 8])),
+                selectInput("needs_edited", "Needs", choices = df$needs, selected = as.character(df[current, 6]), multiple = TRUE,
                             selectize = TRUE, width = NULL, size = NULL),
-                textInput("needDetail", "(Optional) comments on needs",value = as.character(df[current, 7]), placeholder = as.character(df[current, 7])),
-                textInput("department", "Department", value = as.character(df[current, 9]), placeholder = as.character(df[current, 9])),
+                textInput("needsDetail_edited", "(Optional) comments on needs",value = as.character(df[current, 7]), placeholder = as.character(df[current, 7])),
+                textInput("department_edited", "Department", value = as.character(df[current, 9]), placeholder = as.character(df[current, 9])),
                 footer = tagList(modalButton("Cancel"), actionButton("submitEdit", "Submit")))
             )
         })
-
-        editData <- function(data){
-          print(data)
-          #sql_db <- dbConnect(SQLite(), sql_fname)
-          #dbDisconnect(sql_db)
-        }
         
         ### SQL Lite database
         loadData <- function() {
@@ -322,15 +347,31 @@ function(input, output, session) {
           data
         }
         
+        getUserInfo <- function(user_id) {
+          con <- dbConnect(SQLite(), sql_fname)
+          data <- dbGetQuery(con, sprintf("SELECT * FROM skillshare WHERE rowid = %s", user_id))
+          dbDisconnect(con)
+          data
+        }
+        
         saveData <- function(data) {
           # TODO: Clean data (uppercase etc) before saving
-          sql_db <- dbConnect(SQLite(), sql_fname)
           query <- sprintf("INSERT INTO skillshare VALUES (CURRENT_TIMESTAMP, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s %s')", 
-                           data$firstName, data$lastName, data$email, data$skills, data$skillsDetail, data$needs, data$needsDetail, data$department, data$firstName, data$lastName)
+                           data$firstName, data$lastName, data$email, data$skills, data$needs, data$needsDetail, data$skillsDetail, data$department, data$firstName, data$lastName)
+          
+          sql_db <- dbConnect(SQLite(), sql_fname)
           dbExecute(sql_db, query)
           dbDisconnect(sql_db)
         }
 
+        editData <- function(values, user_id){
+          query <- sprintf("UPDATE skillshare SET %s WHERE rowid = %s", values, user_id)
+
+          sql_db <- dbConnect(SQLite(), sql_fname)
+          dbExecute(sql_db, query)
+          dbDisconnect(sql_db)
+        }
+        
         # "Detail" button
         shinyInput <- function(FUN, len, id, ...) {
           inputs <- character(len)
