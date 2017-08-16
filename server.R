@@ -70,7 +70,6 @@ function(input, output, session) {
         output$database <- DT::renderDataTable({
           df = dat()
           df <- df[,c("firstName","lastName","skills","needs")]
-          #print(df)
           ##df <- df[order(df$firstName),]
           df$skills <- as.factor(df$skills) # set columns to factor if search field should be dropdown
           datatable(df, filter = 'top') # put search fields on top of table  # colnames = c('First Name', 'Last Name', 'Skills', 'Needs') ?
@@ -265,7 +264,6 @@ function(input, output, session) {
 
         observeEvent(c(input$details_button,input$current_node_id), {
                           df = dat()
-                          print(input$current_node_id)
                           if (!is.null(input$current_node_id)) {
                             current = which(df$Fullname==input$current_node_id)
                           } else {
@@ -312,9 +310,6 @@ function(input, output, session) {
 
         editData <- function(data){
           print(data)
-          print(data$current)
-          print(data$firstName)
-          print('AAAA')
           #sql_db <- dbConnect(SQLite(), sql_fname)
           #dbDisconnect(sql_db)
         }
