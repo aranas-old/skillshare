@@ -4,6 +4,13 @@ library(DT)
 library(plotly)
 require(visNetwork, quietly = TRUE)
 
+css <- "
+.shiny-output-error { visibility: hidden; }
+.shiny-output-error:before {
+visibility: visible;
+content: 'An error occurred. Please contact the admin.'; }
+}
+"
 
 labelMandatory <- function(label) {
   tagList(
