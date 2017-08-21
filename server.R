@@ -47,40 +47,44 @@ function(input, output, session) {
           changes = c()
           # @Sophie, I couldn't figure out quickly how to only keep track of the form edits so I followed this ugly approach: added suffix _edited to all form units and 
           # compared values to the ones stored in the db. Really ugly, but not urgent to be fixed. Do you know a better solution w/o spending more than 10' on this?
+          
+          # Also, I cleaned the text before saving (trimmed spaces, uppercased first letter etc)
           if (userInfo$firstName != input$firstName_edited){
-            changes = c(changes, sprintf("firstName = '%s'", input$firstName_edited))
+            changes = c(changes, sprintf("firstName = '%s'", clean_text(input$firstName_edited)))
           }
           if (userInfo$lastName != input$lastName_edited){
-            changes = c(changes, sprintf("lastName = '%s'", input$lastName_edited))
+            changes = c(changes, sprintf("lastName = '%s'", clean_text(input$lastName_edited)))
           }
           if (userInfo$email != input$email_edited){
-            changes = c(changes, sprintf("email = '%s'", input$email_edited))
+            changes = c(changes, sprintf("email = '%s'", clean_text(input$email_edited)))
           }
-          edited_skill = paste(input$skills_edited, collapse=", ")
-          if (paste(userInfo$skills, collapse=", ") != edited_skill){
+          edited_skill = clean_list_to_string(input$skills_edited)
+          if (clean_list_to_string(userInfo$skills) != edited_skill){
             changes = c(changes, sprintf("skills = '%s'", edited_skill))
           }
           if (userInfo$skillsDetail != input$skillsDetail_edited){
-            changes = c(changes, sprintf("skillsDetail = '%s'", input$skillsDetail_edited))
+            changes = c(changes, sprintf("skillsDetail = '%s'", clean_text(input$skillsDetail_edited)))
           }
-          edited_need = paste(input$needs_edited, collapse=", ")
-          if (paste(userInfo$needs, collapse=", ") != edited_need){
+          edited_need = clean_list_to_string(input$needs_edited)
+          if (clean_list_to_string(userInfo$needs) != edited_need){
             changes = c(changes, sprintf("needs = '%s'", edited_need))
           }
           if (userInfo$needsDetail != input$needsDetail_edited){
-            changes = c(changes, sprintf("needsDetail = '%s'", input$needsDetail_edited))
+            changes = c(changes, sprintf("needsDetail = '%s'", clean_text(input$needsDetail_edited)))
           }
-          if (userInfo$department != input$department_edited){
+          if (userInfo$department != input$department_edited){  # this goes only through "selectInput", no need to clean text
             changes = c(changes, sprintf("department = '%s'", input$department_edited))
           }
-          changes = paste(changes, collapse=", ")
-          if (changes != ''){  # only update SQL if there are changes
-              editData(changes, value$current)
-          }
+          changes = c(changes, "timestamp = CURRENT_TIMESTAMP")  # Update timestamp. Otherwise only update SQL if there are changes
+          changes = paste(changes, collapse=", ")  # Turn list of changes into a string
+          editData(changes, value$current)
           removeModal()  # close pop-up when submit button is clicked #toggleModal(session, "modaledit", toggle = "close")
         })
 
         # helper functions to handle text
+        clean_text <- function(x){ uppercase_first(trim(remove_NA(x))) }
+        clean_list_to_string <- function(x){paste(clean_text(x), collapse=", ")}
+          
         trim <- function (x) gsub("^\\s+|\\s+$", "", x) # returns string w/o leading or trailing whitespace
         uppercase_first <- function(x){  # we can uppercase the first letter, it's only for aesthetics
           substr(x, 1, 1) <- toupper(substr(x, 1, 1))
@@ -88,7 +92,7 @@ function(input, output, session) {
         }
         remove_NA <- function(x){x[!is.na(x)]}
         string_to_list <- function(x){trim(unlist(strsplit(x, ",")))}
-
+        
         ### Table #####
         # have datatable content as reactive value to be accessed later (i.e. pop-up for details)
         # update with every submit/edit
@@ -104,11 +108,14 @@ function(input, output, session) {
           df <- df[,c("firstName","lastName","skills","needs")]
           ##df <- df[order(df$firstName),]
           df$skills <- as.factor(df$skills) # set columns to factor if search field should be dropdown
-          datatable(df, filter = 'top') # put search fields on top of table  # colnames = c('First Name', 'Last Name', 'Skills', 'Needs') ?
+          datatable(df, filter = 'top') # TODO: put search fields on top of table  # colnames = c('First Name', 'Last Name', 'Skills', 'Needs') ?
           data=data.frame(df,
                           Details = shinyInput(actionButton, length(df$firstName), 'details', label = "Details", onclick = 'Shiny.onInputChange(\"details_button\",  this.id)'))
         },escape=FALSE)
-
+        
+        output$departmentSelector <- renderUI({
+          selectInput("department", "Department", choices=departments)
+        })
         ### Network graph #######
 
         # set content of graph (nodes & edges)
@@ -117,26 +124,25 @@ function(input, output, session) {
           # find pairs of people where skills match needs
           df_pairs <- data.frame()
           nodes <- data.frame()
-          datanet <- dat()
-          skills <- uppercase_first(remove_NA(string_to_list(datanet$skills))) # reads ALL skills into a list
+          df <- dat()
+          skills <- uppercase_first(remove_NA(string_to_list(df$skills))) # reads ALL skills into a list
           needs <- c()  # reads Needs column and processes each line separately
-          for (row in 1:nrow(datanet)){
-            if (is.na(datanet$needs[row])){
+          for (row in 1:nrow(df)){
+            if (is.na(df$needs[row])){
               needs <- rbind(needs, '')  # participant has no needs but we need to keep the row, so rbind it
             } else {
-              needs <- rbind(needs, paste(uppercase_first(string_to_list(datanet$needs[row])), collapse = ","))
+              needs <- rbind(needs, paste(uppercase_first(string_to_list(df$needs[row])), collapse = ","))
             }
           }
-          # now go through each participant row (we can force 1 line/participant, and remove "unique").
-          for (row in 1:nrow(datanet)){
-            currentskill <- uppercase_first(remove_NA(string_to_list(datanet$skills[row])))
-            currentneed <- uppercase_first(remove_NA(string_to_list((datanet$needs[row]))))
+          for (row in 1:nrow(df)){
+            currentskill <- uppercase_first(remove_NA(string_to_list(df$skills[row])))
+            currentneed <- uppercase_first(remove_NA(string_to_list((df$needs[row]))))
             for (nskill in currentskill) {
               combined <- 0
               to_ind <- grep(paste("(^|,| ,)", nskill, "($|,)", sep = ""), needs, ignore.case=TRUE)
               if (length(to_ind)>0){  # first check if skill is needed
-                to <- datanet$fullName[to_ind]
-                from <- rep(datanet$fullName[row], length(to))
+                to <- df$fullName[to_ind]
+                from <- rep(df$fullName[row], length(to))
                 title <- nskill
                 if (length(to) != 0) {
                   combined <- rbind(from, to, title)
@@ -144,18 +150,18 @@ function(input, output, session) {
                 }
               }
             }
-            nodes <- rbind(nodes, data.frame(id = datanet$fullName[row],
+            nodes <- rbind(nodes, data.frame(id = df$fullName[row],
                                              skills = paste(currentskill, collapse = ","),
                                              needs = paste(currentneed, collapse = ","),
-                                             department = paste(datanet$department[row], collapse = ",")))
+                                             department = paste(df$department[row], collapse = ",")))
           }
           
           df_pairs$title <- as.character(df_pairs$title)
           df_pairs <- df_pairs[order(df_pairs$title),]
           df_pairs$title <- as.factor(df_pairs$title)
           count <- data.frame()
-          for (row in 1:nrow(datanet)){
-            name <- datanet$fullName[row]
+          for (row in 1:nrow(df)){
+            name <- df$fullName[row]
             if (any(df_pairs == name)) {
               count = rbind(count, data.frame(Connections = length(which(df_pairs == name)) * 2))
             } else {
@@ -215,7 +221,7 @@ function(input, output, session) {
           selectRows(proxy, NULL)
         })
         # interaction graph & datatable (both search function updates as well as selection)
-          observe({
+        observe({
           indx = input$database_rows_all      # rows on all pages (after being filtered)
           sel = input$database_rows_selected
           if (!is.null(sel)){
@@ -321,22 +327,28 @@ function(input, output, session) {
         })
 
         observeEvent(input$buttonEdit, {
-            df = dat()
-            current = value$current
+            df <- dat()  # TODO: only get skills/needs
+            userInfo <- getUserInfo(value$current)
+            if (!is.null(userInfo$department) &&  userInfo$department %in% departments){  # some of the inserted fields don't exist in the departments list and the app hangs
+              department_value = userInfo$department
+            } else { 
+              department_value = "" 
+            }
+            #print(department_value)
             showModal(modalDialog(
-                title = sprintf("Edit Data for: %s", df[current, 10]),
-                textInput("firstName_edited", "First Name", value = as.character(df[current, 2]), placeholder = as.character(df[current, 2])), 
-                textInput("lastName_edited", "Last Name", value = as.character(df[current, 3]), placeholder = as.character(df[current, 3])),
-                textInput("email_edited", "Email", value = as.character(df[current, 4]), placeholder = as.character(df[current, 4])),
-                selectInput("skills_edited", "Skills", choices = df$skills, selected = as.character(df[current, 5]), multiple = TRUE,
+                title = sprintf("Edit Data for: %s", userInfo$fullName),
+                textInput("firstName_edited", "First Name", value = userInfo$firstName), 
+                textInput("lastName_edited", "Last Name", value = userInfo$lastName),
+                textInput("email_edited", "Email", value = userInfo$email),
+                selectInput("skills_edited", "Skills", choices = df$skills, selected = userInfo$skills, multiple = TRUE,
                             selectize = TRUE, width = NULL, size = NULL),
                 conditionalPanel(condition = "input.skills == 'Other'",
-                                 textInput("new_keyword","New Keyword", value = NULL, placeholder = NULL)),
-                textInput("skillsDetail_edited", "(Optional) comments on skills", value = as.character(df[current, 8]), placeholder = as.character(df[current, 8])),
-                selectInput("needs_edited", "Needs", choices = df$needs, selected = as.character(df[current, 6]), multiple = TRUE,
+                                 textInput("new_keyword","New Keyword", value = NULL)),
+                textInput("skillsDetail_edited", "(Optional) comments on skills", value = userInfo$skillsDetail),
+                selectInput("needs_edited", "Needs", choices = df$needs, selected = userInfo$needs, multiple = TRUE,
                             selectize = TRUE, width = NULL, size = NULL),
-                textInput("needsDetail_edited", "(Optional) comments on needs",value = as.character(df[current, 7]), placeholder = as.character(df[current, 7])),
-                textInput("department_edited", "Department", value = as.character(df[current, 9]), placeholder = as.character(df[current, 9])),
+                textInput("needsDetail_edited", "(Optional) comments on needs",value = userInfo$needsDetail),
+                selectInput("department_edited", "Department", choices = departments),# value = department_value), FIXME: Warning: Error in selectInput: unused argument (value = department_value)
                 footer = tagList(modalButton("Cancel"), actionButton("submitEdit", "Submit")))
             )
         })
@@ -368,7 +380,6 @@ function(input, output, session) {
 
         editData <- function(values, user_id){
           query <- sprintf("UPDATE skillshare SET %s WHERE rowid = %s", values, user_id)
-
           sql_db <- dbConnect(SQLite(), sql_fname)
           dbExecute(sql_db, query)
           dbDisconnect(sql_db)

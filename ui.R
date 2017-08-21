@@ -22,10 +22,10 @@ labelMandatory <- function(label) {
 appCSS <-
   ".mandatory_star { color: red; }"
 
-
 shinyUI(fluidPage(
   tags$script("Shiny.addCustomMessageHandler('resetValue', function(variableName) {
                                             Shiny.onInputChange(variableName, null);});"),
+  tags$head(tags$title('Skillshare database for the IMRPS and Language in Interaction')),
   useShinyjs(),
   shinyjs::inlineCSS(appCSS),
   titlePanel(title=div(img(src="images/combined_logos.png", height= 90), "Skillshare Database")),
@@ -52,7 +52,7 @@ shinyUI(fluidPage(
                               textInput("skillsDetail", "Skill in detail", ""),
                               textInput("needs", "Need", ""),
                               textInput("needsDetail", "Need in detail", ""),
-                              textInput("department", "Department", ""),
+                              uiOutput("departmentSelector"),
                               actionButton("submit", "Submit"))
                       ),
              tabPanel("Keyword Statistics",
