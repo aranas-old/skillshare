@@ -28,11 +28,10 @@ dbrowcount
 ###################################
 
 # helper functions to handle text
-clean_text <- function(x){ uppercase_first(trim(remove_NA(x))) }
+clean_text <- function(x){ uppercase_first(trimws(remove_NA(x))) }
 clean_list_to_string <- function(x){ paste(clean_text(x), collapse=", ") }
-clean_text_uppercase_all <- function(x){ paste(clean_text(trim(unlist(strsplit(x, ",")))), collapse=", ") }
+clean_text_uppercase_all <- function(x){ paste(clean_text(trimws(unlist(strsplit(x, ",")))), collapse=", ") }
 
-trim <- function (x) gsub("^\\s+|\\s+$", "", x) # returns string w/o leading or trailing whitespace
 uppercase_first <- function(x){  # we can uppercase the first letter, it's only for aesthetics
   substr(x, 1, 1) <- toupper(substr(x, 1, 1))
   x
@@ -45,7 +44,7 @@ all_data <- dbGetQuery(sql_db, "SELECT * FROM skillshare")
 for (id in 1:nrow(all_data)){
   firstName = clean_text(all_data[id, 2])
   lastName = clean_text(all_data[id, 3])
-  email = trim(all_data[id, 3])
+  email = trimws(all_data[id, 3])
   skills = clean_text_uppercase_all(all_data[id, 5])
   needs = clean_text_uppercase_all(all_data[id, 6])
   needsDetail = clean_text(all_data[id, 7])
@@ -58,5 +57,3 @@ for (id in 1:nrow(all_data)){
   dbExecute(sql_db, query)
 }
 dbDisconnect(sql_db)
-
-

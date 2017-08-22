@@ -44,9 +44,9 @@ shinyUI(fluidPage(
                               textInput("firstName", labelMandatory("First Name"), ""),
                               textInput("lastName", labelMandatory("Last Name"), ""),
                               textInput("email", labelMandatory("Email"), ""),
-                              textInput("skills", labelMandatory("Skill"), ""),
+                              uiOutput("skillsSelector"),
                               textInput("skillsDetail", "Skill in detail", ""),
-                              textInput("needs", "Need", ""),
+                              uiOutput("needsSelector"),
                               textInput("needsDetail", "Need in detail", ""),
                               uiOutput("departmentSelector"),
                               actionButton("submit", "Submit"))

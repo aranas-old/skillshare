@@ -82,17 +82,15 @@ function(input, output, session) {
         })
 
         # helper functions to handle text
-        clean_text <- function(x){ uppercase_first(trim(remove_NA(x))) }
+        clean_text <- function(x){ uppercase_first(trimws(x)) }
         clean_list_to_string <- function(x){ paste(clean_text(x), collapse=", ") }
-        clean_text_uppercase_all <- function(x){ paste(clean_text(trim(unlist(strsplit(x, ",")))), collapse=", ") }
-        
-        trim <- function (x) gsub("^\\s+|\\s+$", "", x) # returns string w/o leading or trailing whitespace
         uppercase_first <- function(x){  # we can uppercase the first letter, it's only for aesthetics
           substr(x, 1, 1) <- toupper(substr(x, 1, 1))
           x
         }
-        remove_NA <- function(x){x[!is.na(x)]}
-        string_to_list <- function(x){trim(unlist(strsplit(x, ",")))}
+        remove_empty <- function(x){x[x != ""]}
+        data_to_list <- function(x){unique(remove_empty(trimws(unlist(strsplit(x, ",")))))}
+        string_to_list <- function(x){remove_empty(trimws(unlist(strsplit(x, ","))))}
         
         # check the vailidity of the e-mail format:
         isValidEmail <- function(x) {
@@ -108,6 +106,15 @@ function(input, output, session) {
           dat = loadData()
           dat
         })
+        
+        skillsNeedsKeywords <- reactive({
+          input$submit
+          input$submitEdit
+          data = getSkillsNeeds()
+          all_unique_keywords = data_to_list(paste(data$skills, ", ", data$needs))
+          all_unique_keywords
+        })
+        
         # Select relevant information to visualize in table
         output$database <- DT::renderDataTable({
           df = dat()
@@ -119,35 +126,55 @@ function(input, output, session) {
                           Details = shinyInput(actionButton, length(df$firstName), 'details', label = "Details", onclick = 'Shiny.onInputChange(\"details_button\",  this.id)'))
         },escape=FALSE)
         
+        # this is in the UI file as well. Check whether we can avoid duplication.
+        labelMandatory <- function(label) {
+          tagList(
+            label,
+            span("*", class = "mandatory_star")
+          )
+        }
+        
         output$departmentSelector <- renderUI({
           selectInput("department", "Department", choices=departments)
+        })
+        output$skillsSelector <- renderUI({
+          skills_and_needs <- skillsNeedsKeywords()
+          selectInput("skills", tagList("Skills", span("*", class = "mandatory_star")), choices = skills_and_needs, multiple = TRUE)
+        })
+        output$needsSelector <- renderUI({
+          skills_and_needs <- skillsNeedsKeywords()
+          selectInput("needs", "Needs", choices = skills_and_needs, multiple = TRUE)
         })
         ### Network graph #######
 
         # set content of graph (nodes & edges)
         node_pairs <- reactive({
           input$submit # update nodes whenever new data is submitted
+          input$submitEdit  # or edited
+          
+          skills_and_needs <- getSkillsNeeds()
+          
           # find pairs of people where skills match needs
           df_pairs <- data.frame()
           nodes <- data.frame()
           df <- dat()
-          skills <- uppercase_first(remove_NA(string_to_list(df$skills))) # reads ALL skills into a list
+          skills <- string_to_list(df$skills) # reads ALL skills into a list
           needs <- c()  # reads Needs column and processes each line separately
           for (row in 1:nrow(df)){
             if (is.na(df$needs[row])){
               needs <- rbind(needs, '')  # participant has no needs but we need to keep the row, so rbind it
             } else {
-              needs <- rbind(needs, paste(uppercase_first(string_to_list(df$needs[row])), collapse = ","))
+              needs <- rbind(needs, paste(string_to_list(df$needs[row]), collapse = ","))
             }
           }
           for (row in 1:nrow(df)){
-            currentskill <- uppercase_first(remove_NA(string_to_list(df$skills[row])))
-            currentneed <- uppercase_first(remove_NA(string_to_list((df$needs[row]))))
+            currentskill <- string_to_list(df$skills[row])
+            currentneed <- string_to_list(df$needs[row])
             for (nskill in currentskill) {
               combined <- 0
               to_ind <- grep(paste("(^|,| ,)", nskill, "($|,)", sep = ""), needs, ignore.case=TRUE)
               if (length(to_ind)>0){  # first check if skill is needed
-                to <- to_ind #df$fullName[to_ind]
+                to <- to_ind
                 from <- rep(row, length(to))#rep(df$fullName[row], length(to))
                 title <- nskill
                 if (length(to) != 0) {
@@ -156,7 +183,7 @@ function(input, output, session) {
                 }
               }
             }
-            nodes <- rbind(nodes, data.frame(id = row, #df$fullName[row],
+            nodes <- rbind(nodes, data.frame(id = row,
                                              fullName = df$fullName[row],
                                              skills = paste(currentskill, collapse = ","),
                                              needs = paste(currentneed, collapse = ","),
@@ -334,7 +361,7 @@ function(input, output, session) {
         })
 
         observeEvent(input$buttonEdit, {
-            df <- dat()  # TODO: only get skills/needs
+            skills_and_needs <- skillsNeedsKeywords()
             userInfo <- getUserInfo(value$current)
             if (!is.null(userInfo$department) &&  userInfo$department %in% departments){  # some of the inserted fields don't exist in the departments list and the app hangs
               department_value = userInfo$department
@@ -346,12 +373,12 @@ function(input, output, session) {
                 textInput("firstName_edited", "First Name", value = userInfo$firstName), 
                 textInput("lastName_edited", "Last Name", value = userInfo$lastName),
                 textInput("email_edited", "Email", value = userInfo$email),
-                selectInput("skills_edited", "Skills", choices = df$skills, selected = userInfo$skills, multiple = TRUE,
+                selectInput("skills_edited", "Skills", choices = skills_and_needs, selected = string_to_list(userInfo$skills), multiple = TRUE,
                             selectize = TRUE, width = NULL, size = NULL),
                 conditionalPanel(condition = "input.skills == 'Other'",
                                  textInput("new_keyword","New Keyword", value = NULL)),
                 textInput("skillsDetail_edited", "(Optional) comments on skills", value = userInfo$skillsDetail),
-                selectInput("needs_edited", "Needs", choices = df$needs, selected = userInfo$needs, multiple = TRUE,
+                selectInput("needs_edited", "Needs", choices = skills_and_needs, selected = string_to_list(userInfo$needs), multiple = TRUE,
                             selectize = TRUE, width = NULL, size = NULL),
                 textInput("needsDetail_edited", "(Optional) comments on needs",value = userInfo$needsDetail),
                 selectInput("department_edited", "Department", choices = departments),# value = department_value), FIXME: Warning: Error in selectInput: unused argument (value = department_value)
@@ -368,9 +395,17 @@ function(input, output, session) {
         }
         
         getUserInfo <- function(user_id) {
-          con <- dbConnect(SQLite(), sql_fname)
-          data <- dbGetQuery(con, sprintf("SELECT * FROM skillshare WHERE rowid = %s", user_id))
-          dbDisconnect(con)
+          sql_db <- dbConnect(SQLite(), sql_fname)
+          data <- dbGetQuery(sql_db, sprintf("SELECT * FROM skillshare WHERE rowid = %s", user_id))
+          dbDisconnect(sql_db)
+          data
+        }
+        
+        getSkillsNeeds <- function(){
+          sql_db <- dbConnect(SQLite(), "db/data.sqlite")
+          data <- dbGetQuery(sql_db, "SELECT skills, needs FROM skillshare") 
+          dbDisconnect(sql_db)
+          colnames(data) <- c("skills", "needs")
           data
         }
         
@@ -378,9 +413,11 @@ function(input, output, session) {
           # Clean data (uppercase etc) before saving
           firstName = clean_text(data$firstName)
           lastName = clean_text(data$lastName)
+          skills = clean_list_to_string(data$skills)
+          needs = clean_list_to_string(data$needs)
           query <- sprintf("INSERT INTO skillshare VALUES (CURRENT_TIMESTAMP, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s %s')", 
-                           firstName, lastName, trim(data$email), clean_text_uppercase_all(data$skills), clean_text_uppercase_all(data$needs), 
-                           clean_text(data$needsDetail), clean_text(data$skillsDetail), clean_text(data$department), firstName, lastName)
+                           firstName, lastName, trimws(data$email), skills, needs, clean_text(data$needsDetail), clean_text(data$skillsDetail), 
+                           clean_text(data$department), firstName, lastName)
           sql_db <- dbConnect(SQLite(), sql_fname)
           dbExecute(sql_db, query)
           dbDisconnect(sql_db)
