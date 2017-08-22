@@ -83,8 +83,9 @@ function(input, output, session) {
 
         # helper functions to handle text
         clean_text <- function(x){ uppercase_first(trim(remove_NA(x))) }
-        clean_list_to_string <- function(x){paste(clean_text(x), collapse=", ")}
-          
+        clean_list_to_string <- function(x){ paste(clean_text(x), collapse=", ") }
+        clean_text_uppercase_all <- function(x){ paste(clean_text(trim(unlist(strsplit(x, ",")))), collapse=", ") }
+        
         trim <- function (x) gsub("^\\s+|\\s+$", "", x) # returns string w/o leading or trailing whitespace
         uppercase_first <- function(x){  # we can uppercase the first letter, it's only for aesthetics
           substr(x, 1, 1) <- toupper(substr(x, 1, 1))
@@ -92,6 +93,11 @@ function(input, output, session) {
         }
         remove_NA <- function(x){x[!is.na(x)]}
         string_to_list <- function(x){trim(unlist(strsplit(x, ",")))}
+        
+        # check the vailidity of the e-mail format:
+        isValidEmail <- function(x) {
+          grepl("\\<[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}\\>", as.character(x), ignore.case=TRUE)
+        }
         
         ### Table #####
         # have datatable content as reactive value to be accessed later (i.e. pop-up for details)
@@ -141,8 +147,8 @@ function(input, output, session) {
               combined <- 0
               to_ind <- grep(paste("(^|,| ,)", nskill, "($|,)", sep = ""), needs, ignore.case=TRUE)
               if (length(to_ind)>0){  # first check if skill is needed
-                to <- df$fullName[to_ind]
-                from <- rep(df$fullName[row], length(to))
+                to <- to_ind #df$fullName[to_ind]
+                from <- rep(row, length(to))#rep(df$fullName[row], length(to))
                 title <- nskill
                 if (length(to) != 0) {
                   combined <- rbind(from, to, title)
@@ -150,7 +156,8 @@ function(input, output, session) {
                 }
               }
             }
-            nodes <- rbind(nodes, data.frame(id = df$fullName[row],
+            nodes <- rbind(nodes, data.frame(id = row, #df$fullName[row],
+                                             fullName = df$fullName[row],
                                              skills = paste(currentskill, collapse = ","),
                                              needs = paste(currentneed, collapse = ","),
                                              department = paste(df$department[row], collapse = ",")))
@@ -188,7 +195,7 @@ function(input, output, session) {
           nodes$shadow <- TRUE # Nodes will drop shadow
           nodes$label <- NULL # Node label
           #nodes$title <- paste0("Name : ", nodes$id, "<br> Email : ", nodes$Email , "<br> Skill : ", nodes$Skills)
-          nodes$title <- nodes$id
+          nodes$title <- nodes$fullName #nodes$id
           nodes$size <- nodes$Connections # Node size
           nodes$borderWidth <- 2 # Node border width
           nodes$font.size <- 0
@@ -244,7 +251,8 @@ function(input, output, session) {
           df_pairs$color <- colors$colors[match(df_pairs$title, colors$skills)]  # line color
           #gray out the ones belonging to gray nodes
           #FIX:so ugly, there must be a more elegant way?
-          gray_out=intersect(which(df_pairs$from%in%setdiff(df_pairs$from,nodes$id[indx])),which(df_pairs$to%in%setdiff(df_pairs$to,nodes$id[indx])))
+          # TODO: gray_out=intersect(which(df_pairs$from%in%setdiff(df_pairs$from,nodes$id[indx])),which(df_pairs$to%in%setdiff(df_pairs$to,nodes$id[indx])))  # FIXME
+          gray_out=intersect(which(df_pairs$from%in%setdiff(df_pairs$from,nodes$id[indx])),which(df_pairs$to%in%setdiff(df_pairs$to,nodes$id[indx])))  # FIXME
           df_pairs$color <- as.character(df_pairs$color) # weird interference with the factor level
           df_pairs$color[gray_out] <- "#d3d3d3"
           df_pairs$color <- as.factor(df_pairs$color)
@@ -302,10 +310,9 @@ function(input, output, session) {
 
         observeEvent(c(input$details_button,input$current_node_id), {
                           if (!is.null(input$current_node_id)) {  # when user clicks on network nodes
-                            df = dat()  # TODO: Change current_node_id into the row id to avoid the extra search
-                            current = which(df$fullName==input$current_node_id)
+                              current = input$current_node_id
                           } else {  # when user clicks on table "Details" button
-                            current = as.numeric(input$details_button)
+                              current = input$details_button
                           }
                           userInfo <- getUserInfo(current)
                           showModal(modalDialog(
@@ -334,7 +341,6 @@ function(input, output, session) {
             } else { 
               department_value = "" 
             }
-            #print(department_value)
             showModal(modalDialog(
                 title = sprintf("Edit Data for: %s", userInfo$fullName),
                 textInput("firstName_edited", "First Name", value = userInfo$firstName), 
@@ -369,10 +375,12 @@ function(input, output, session) {
         }
         
         saveData <- function(data) {
-          # TODO: Clean data (uppercase etc) before saving
+          # Clean data (uppercase etc) before saving
+          firstName = clean_text(data$firstName)
+          lastName = clean_text(data$lastName)
           query <- sprintf("INSERT INTO skillshare VALUES (CURRENT_TIMESTAMP, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s %s')", 
-                           data$firstName, data$lastName, data$email, data$skills, data$needs, data$needsDetail, data$skillsDetail, data$department, data$firstName, data$lastName)
-          
+                           firstName, lastName, trim(data$email), clean_text_uppercase_all(data$skills), clean_text_uppercase_all(data$needs), 
+                           clean_text(data$needsDetail), clean_text(data$skillsDetail), clean_text(data$department), firstName, lastName)
           sql_db <- dbConnect(SQLite(), sql_fname)
           dbExecute(sql_db, query)
           dbDisconnect(sql_db)

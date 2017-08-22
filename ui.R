@@ -4,14 +4,6 @@ library(DT)
 library(plotly)
 require(visNetwork, quietly = TRUE)
 
-css <- "
-.shiny-output-error { visibility: hidden; }
-.shiny-output-error:before {
-visibility: visible;
-content: 'An error occurred. Please contact the admin.'; }
-}
-"
-
 labelMandatory <- function(label) {
   tagList(
     label,
@@ -19,15 +11,19 @@ labelMandatory <- function(label) {
   )
 }
 
-appCSS <-
-  ".mandatory_star { color: red; }"
+css <- ".mandatory_star { color: red; }
+        .shiny-output-error { visibility: hidden; }
+        .shiny-output-error:before {
+          visibility: visible;
+          content: 'An error occurred. Please contact the admin.'; }
+       "
 
 shinyUI(fluidPage(
   tags$script("Shiny.addCustomMessageHandler('resetValue', function(variableName) {
                                             Shiny.onInputChange(variableName, null);});"),
   tags$head(tags$title('Skillshare database for the IMRPS and Language in Interaction')),
   useShinyjs(),
-  shinyjs::inlineCSS(appCSS),
+  shinyjs::inlineCSS(css),
   titlePanel(title=div(img(src="images/combined_logos.png", height= 90), "Skillshare Database")),
   fluidRow(
     column(5,
