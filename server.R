@@ -17,6 +17,7 @@ database_fname <- "db/data"
 sql_fname = "db/data.sqlite"
 # partner institutes for Language in Interaction: https://www.languageininteraction.nl/organisation/partners.html. Maybe "departments" is too specific? Should we switch to institute/university?
 departments <- c("Centre for Language Studies (CLS), Radboud University", "Centre for Language and Speech Technology (CLST), Radboud University", "Donders Centre for Cognition (DCC), Donders", "Institute for Logic, Language and Computation (ILLC), University of Amsterdam", "Neurobiology of Language (NB), MPI", "Language and Cognition (LC), MPI", "Language and Genetics (GEN), MPI", "Language Development, MPI", "Psychology of Language (POL), MPI", "Neurogenetics of Vocal Communication Group, MPI", "RadboudUMC", "UMC Utrecht", "Maastricht University", "Tilburg University", "Universitetit Leiden")
+departments <- departments[order(departments)]  # sort alphabetically
 
 function(input, output, session) {
     observe({
@@ -381,7 +382,7 @@ function(input, output, session) {
                 selectInput("needs_edited", "Needs", choices = skills_and_needs, selected = string_to_list(userInfo$needs), multiple = TRUE,
                             selectize = TRUE, width = NULL, size = NULL),
                 textInput("needsDetail_edited", "(Optional) comments on needs",value = userInfo$needsDetail),
-                selectInput("department_edited", "Department", choices = departments),# value = department_value), FIXME: Warning: Error in selectInput: unused argument (value = department_value)
+                selectInput("department_edited", "Department", choices = departments, selected = department_value),
                 footer = tagList(modalButton("Cancel"), actionButton("submitEdit", "Submit")))
             )
         })
