@@ -16,6 +16,7 @@ fields <- c("timestamp", "firstName","lastName","email","skills","needs","needsD
 database_fname <- "db/data"
 sql_fname = "db/data.sqlite"
 # partner institutes for Language in Interaction: https://www.languageininteraction.nl/organisation/partners.html. Maybe "departments" is too specific? Should we switch to institute/university?
+# TODO: Check if the list is complete
 departments <- c("Centre for Language Studies (CLS), Radboud University", "Centre for Language and Speech Technology (CLST), Radboud University", "Donders Centre for Cognition (DCC), Donders", "Institute for Logic, Language and Computation (ILLC), University of Amsterdam", "Neurobiology of Language (NB), MPI", "Language and Cognition (LC), MPI", "Language and Genetics (GEN), MPI", "Language Development, MPI", "Psychology of Language (POL), MPI", "Neurogenetics of Vocal Communication Group, MPI", "RadboudUMC", "UMC Utrecht", "Maastricht University", "Tilburg University", "Universitetit Leiden")
 departments <- departments[order(departments)]  # sort alphabetically
 
@@ -34,8 +35,8 @@ function(input, output, session) {
                                    },
                                    logical(1))
           mandatoryFilled <- all(mandatoryFilled)
-          # enable/disable the submit button
-          shinyjs::toggleState(id = "submit", condition = mandatoryFilled)
+          # enable/disable the submit button (all mandatory fields need to be filled in, and the e-mail needs to have a correct format)
+          shinyjs::toggleState(id = "submit", condition = (mandatoryFilled && isValidEmail(input$email)))
         })
 
         observeEvent(input$submit, { # New data: when the Submit button is clicked, save the form data
@@ -127,14 +128,7 @@ function(input, output, session) {
                           Details = shinyInput(actionButton, length(df$firstName), 'details', label = "Details", onclick = 'Shiny.onInputChange(\"details_button\",  this.id)'))
         },escape=FALSE)
         
-        # this is in the UI file as well. Check whether we can avoid duplication.
-        labelMandatory <- function(label) {
-          tagList(
-            label,
-            span("*", class = "mandatory_star")
-          )
-        }
-        
+        #### used in the "Add data" form ####
         output$departmentSelector <- renderUI({
           selectInput("department", "Department", choices=departments)
         })
@@ -146,6 +140,7 @@ function(input, output, session) {
           skills_and_needs <- skillsNeedsKeywords()
           selectInput("needs", "Needs", choices = skills_and_needs, multiple = TRUE)
         })
+        
         ### Network graph #######
 
         # set content of graph (nodes & edges)
