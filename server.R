@@ -22,6 +22,10 @@ departments <- departments[order(departments)]  # sort alphabetically
 
 function(input, output, session) {
     observe({
+        #### Draggable Panel ######
+      observeEvent(input$More, ({
+        updateCollapse(session, "collapse", close = "How to")
+      }))
         ### Form #####
         formData <- reactive({
           sapply(fields, function(x) input[[x]])  # Aggregate all form data
