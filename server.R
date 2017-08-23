@@ -9,11 +9,9 @@ require(shiny)
 library(shinyjs)
 library(shinyBS)
 require("RSQLite")
-#useShinyjs()
 
 ### Set variables #####
 fields <- c("timestamp", "firstName","lastName","email","skills","needs","needsDetail","skillsDetail","department")
-database_fname <- "db/data"
 sql_fname = "db/data.sqlite"
 # partner institutes for Language in Interaction: https://www.languageininteraction.nl/organisation/partners.html. Maybe "departments" is too specific? Should we switch to institute/university?
 # TODO: Check if the list is complete
@@ -22,7 +20,7 @@ departments <- departments[order(departments)]  # sort alphabetically
 
 function(input, output, session) {
     observe({
-        ### Form #####
+        ### Add form #####
         formData <- reactive({
           sapply(fields, function(x) input[[x]])  # Aggregate all form data
         })
@@ -53,9 +51,14 @@ function(input, output, session) {
           # Also, I cleaned the text before saving (trimmed spaces, uppercased first letter etc)
           if (userInfo$firstName != input$firstName_edited){
             changes = c(changes, sprintf("firstName = '%s'", clean_text(input$firstName_edited)))
-          }
+            fullName = input$firstName_edited
+          } 
           if (userInfo$lastName != input$lastName_edited){
             changes = c(changes, sprintf("lastName = '%s'", clean_text(input$lastName_edited)))
+          }
+          fullName = paste(clean_text(input$firstName_edited), " ", clean_text(input$lastName_edited))
+          if (userInfo$fullName != fullName){
+            changes = c(changes, sprintf("fullName = '%s'", fullName))
           }
           if (userInfo$email != input$email_edited){
             changes = c(changes, sprintf("email = '%s'", clean_text(input$email_edited)))
@@ -80,13 +83,13 @@ function(input, output, session) {
           changes = c(changes, "timestamp = CURRENT_TIMESTAMP")  # Update timestamp. Otherwise only update SQL if there are changes
           changes = paste(changes, collapse=", ")  # Turn list of changes into a string
           editData(changes, value$current)
-          removeModal()  # close pop-up when submit button is clicked #toggleModal(session, "modaledit", toggle = "close")
+          removeModal()  # close pop-up(s) when submit button is clicked #toggleModal(session, "modaledit", toggle = "close")
         })
 
         # helper functions to handle text
         clean_text <- function(x){ uppercase_first(trimws(x)) }
         clean_list_to_string <- function(x){ paste(clean_text(x), collapse=", ") }
-        uppercase_first <- function(x){  # we can uppercase the first letter, it's only for aesthetics
+        uppercase_first <- function(x){  # uppercase the first letter, it's only for aesthetics
           substr(x, 1, 1) <- toupper(substr(x, 1, 1))
           x
         }
@@ -102,7 +105,7 @@ function(input, output, session) {
         ### Table #####
         # have datatable content as reactive value to be accessed later (i.e. pop-up for details)
         # update with every submit/edit
-        dat <- reactive({
+        dat <- reactive({   # WILL BE REMOVED, we don't need to load all data
           input$submit
           input$submitEdit
           dat = loadData()
@@ -112,14 +115,14 @@ function(input, output, session) {
         getBasicInfo <- reactive({
           input$submit
           input$submitEdit
-          data = queryBasicData()
+          data = queryBasicData()  # query DB to get fullName, skills, needs and department
           data
         })
         
         skillsNeedsUnique <- reactive({
           input$submit
           input$submitEdit
-          data = querySkillsNeeds()
+          data = getBasicInfo()
           all_unique_keywords = unique(data_to_list(paste(data$skills, ", ", data$needs)))
           all_unique_keywords
         })
@@ -127,7 +130,7 @@ function(input, output, session) {
         skillsKeywords <- reactive({
           input$submit
           input$submitEdit
-          data = querySkillsNeeds()
+          data = getBasicInfo()
           skills = data_to_list(data$skills)
           skills
         })
@@ -135,7 +138,7 @@ function(input, output, session) {
         needsKeywords <- reactive({
           input$submit
           input$submitEdit
-          data = querySkillsNeeds()
+          data = getBasicInfo()
           needs = data_to_list(data$needs)
           needs
         })
@@ -145,7 +148,7 @@ function(input, output, session) {
         output$database <- DT::renderDataTable({
           df = dat()
           df <- df[,c("firstName","lastName","skills","needs")]
-          ##df <- df[order(df$firstName),]
+          #df <- df[order(df$firstName),]
           df$skills <- as.factor(df$skills) # set columns to factor if search field should be dropdown
           datatable(df, filter = 'top') # TODO: put search fields on top of table  # colnames = c('First Name', 'Last Name', 'Skills', 'Needs') ?
           data=data.frame(df,
@@ -165,53 +168,42 @@ function(input, output, session) {
           selectInput("needs", "Needs", choices = skills_and_needs, multiple = TRUE)
         })
         
-        ### Network graph #######
-
-        # set content of graph (nodes & edges)
+        #########################
+        ##### Network graph #####
+        #########################
         node_pairs <- reactive({
+          # set content of graph (nodes & edges). Find pairs of people where skills match needs
           input$submit # update nodes whenever new data is submitted
           input$submitEdit  # or edited
           
-          # find pairs of people where skills match needs
-          df_pairs <- data.frame()
+          edges <- data.frame()
           nodes <- data.frame()
           
           data = getBasicInfo()
           skills = strsplit(data$skills, ", ")
           # Go through Needs instead of Skills, they are less
           for (row in 1:nrow(data)){
+            node_connection_size = 1 # default (arbitrary) connection size. We can use it to determine the size of the node.
             current_need <- string_to_list(data$needs[row])
             for (need in current_need) {
-              combined <- 0
-              idx <- grep(need, skills, ignore.case = TRUE)
-              if (length(idx)>0){
-                from = idx
+              skilled_idx <- grep(need, skills, ignore.case = TRUE)
+              if (length(skilled_idx) > 0){
+                node_connection_size = node_connection_size + length(skilled_idx)  # increase by connections of current skill
+                from = skilled_idx
                 to = rep(row, length(from))
-                title <- need
-                combined <- rbind(to, from, title)
-                df_pairs <- rbind(df_pairs, as.data.frame(t(combined)))
+                title = need
+                edges <- rbind(edges, as.data.frame(t(rbind(to, from, title))))
               }
             }
             nodes <- rbind(nodes, data.frame(id = row,
                                              fullName = data$fullName[row],
                                              skills = data$skills[row],
                                              needs = data$needs[row],
-                                             department = data$department[row]))
+                                             department = data$department[row],
+                                             connection_size = node_connection_size))
           }
-          
-          df_pairs <- df_pairs[order(df_pairs$title),]
-          df_pairs$title <- as.factor(df_pairs$title)
-          count <- data.frame()  # FIXME: we have this info already, no reason to go through data twice
-          for (row in 1:nrow(data)){
-            if (any(df_pairs == data$fullName[row])) {
-              count = rbind(count, data.frame(Connections = length(which(df_pairs == data$fullName[row])) * 2))
-            } else {
-              count = rbind(count, data.frame(Connections = 4))
-            }
-          }
-          nodes <- cbind(nodes, data.frame(Connections = count))
-          graphinfo <- list(nodes = nodes, df_pairs = df_pairs) # concat all variables that are accessed elsewhere in code
-          graphinfo
+          #edges <- edges[order(edges$title),]
+          list(nodes = nodes, edges = edges) # returns nodes and edges (pairs)
         })
 
         # set visual parameters of graph
@@ -219,34 +211,32 @@ function(input, output, session) {
           # access nodes & edges reactive values
           graphinfo <- node_pairs()
           nodes <- graphinfo$nodes
-          df_pairs <- graphinfo$df_pairs
-          skills = skillsKeywords()
+          edges <- graphinfo$edges
+          skills = sort(unique(skillsKeywords()))
+          num_skills = length(skills)
           # create color palette
-          palet = colorRampPalette(brewer.pal(length(unique(skills)), "Paired"))  # Pastel1 has less colors
-          colors = data.frame(skills = sort(unique(skills)), colors = c(color = palet(length(unique(skills)))))
+          palet = colorRampPalette(brewer.pal(num_skills, "Paired"))  # Pastel1 has less colors
+          colors = data.frame(skills = skills, colors = c(color = palet(num_skills)))
           # set node parameters
           nodes$shape <- "dot"
           nodes$shadow <- TRUE # Nodes will drop shadow
           nodes$label <- NULL # Node label
-          #nodes$title <- paste0("Name : ", nodes$id, "<br> Email : ", nodes$Email , "<br> Skill : ", nodes$Skills)
-          nodes$title <- nodes$fullName #nodes$id
-          nodes$size <- nodes$Connections * 3 # Increase node size
-          nodes$borderWidth <- 2 # Node border width
+          nodes$title <- nodes$fullName
+          nodes$size <- 14 # I actually like uniformity in the nodes, but if you want to play with the size of the connections then: #nodes$connection_size * 3 (or any other number)
           nodes$font.size <- 0
           #set nodes colors
           nodes$color.background <- "#4bd8c1"
           nodes$color.border <- "#42b2a0"
           nodes$color.highlight.background <- "#4bd8c1"
-          nodes$color.highlight.border <- "red"
+          nodes$color.highlight.border <- "#006600"  #changed it to dark green instead of "red" because it looked like an error IMO. What do you think? :)
           #set edges parameters
-          df_pairs$color <- colors$colors[match(df_pairs$title, colors$skills)]  # line color
-          df_pairs$arrows <- "to" # arrows: 'from', 'to', or 'middle'
-          df_pairs$smooth <- TRUE    # should the edges be curved?
-          df_pairs$shadow <- FALSE    # edge shadow
-          df_pairs$width <- 5    # edge shadow
+          #edges$color <- colors$colors[match(edges$title, colors$skills)]  # line color
+          edges$arrows <- "to" # arrows: 'from', 'to', or 'middle'
+          edges$smooth <- FALSE    # should the edges be curved?
+          edges$width <- 6 # edge shadow
           
           #output network
-          visNetwork(nodes, df_pairs) %>%
+          visNetwork(nodes, edges, width="100%") %>%
             visIgraphLayout(layout = "layout_in_circle") %>%
             visOptions(highlightNearest = FALSE) %>%  #nodesIdSelection = TRUE #selectedBy = list(variable = "Skills")
             visInteraction(hover = TRUE, hoverConnectedEdges = TRUE, dragNodes = FALSE, zoomView = FALSE, tooltipDelay = 150, dragView = FALSE) %>%
@@ -271,32 +261,31 @@ function(input, output, session) {
           #access reactive values
           graphinfo <- node_pairs()
           nodes <- graphinfo$nodes
-          df_pairs <- graphinfo$df_pairs
+          edges <- graphinfo$edges
           skills = skillsKeywords()
           #create color palette
           palet = colorRampPalette(brewer.pal(length(unique(skills)), "Paired"))   # Pastel1 has less colors
           colors = data.frame(skills = sort(unique(skills)), colors = c(color = palet(length(unique(skills)))))
           #change color
-          nodes$color.background <- "#d3d3d3" #lightgray
+          nodes$color.background <- "fff" #"#d3d3d3" #lightgray
           nodes$color.border <- "#d3d3d3"
           nodes$color.background[indx] <- "#4bd8c1"
           nodes$color.border[indx] <- "#42b2a0"
           #color all edges
-          df_pairs$color <- colors$colors[match(df_pairs$title, colors$skills)]  # line color
-          #gray out the ones belonging to gray nodes
+          edges$color <- colors$colors[match(edges$title, colors$skills)]  # line color
+          # Gray out non selected nodes
           #FIX:so ugly, there must be a more elegant way?
-          # TODO: gray_out=intersect(which(df_pairs$from%in%setdiff(df_pairs$from,nodes$id[indx])),which(df_pairs$to%in%setdiff(df_pairs$to,nodes$id[indx])))  # FIXME
-          gray_out=intersect(which(df_pairs$from%in%setdiff(df_pairs$from,nodes$id[indx])),which(df_pairs$to%in%setdiff(df_pairs$to,nodes$id[indx])))  # FIXME
-          df_pairs$color <- as.character(df_pairs$color) # weird interference with the factor level
-          df_pairs$color[gray_out] <- "#d3d3d3"
-          df_pairs$color <- as.factor(df_pairs$color)
-          df_pairs$width <- 5    # edge shadow
-          df_pairs$arrows <- "to"
+          gray_out=intersect(which(edges$from%in%setdiff(edges$from,nodes$id[indx])),which(edges$to%in%setdiff(edges$to,nodes$id[indx])))  # FIXME
+          edges$color <- as.character(edges$color) # weird interference with the factor level
+          edges$color[gray_out] <- "fff" #"#d3d3d3"
+          edges$color <- as.factor(edges$color)
+          edges$width <- 5    # edge shadow
+          edges$arrows <- "to"
           #FIX: for some reason the tip of the arrows do not change color
           #update network
           visNetworkProxy("network") %>%
           visUpdateNodes(nodes) %>%
-          visUpdateEdges(df_pairs)
+          visUpdateEdges(edges)
         })
 
         ### pie plots #####
@@ -311,7 +300,7 @@ function(input, output, session) {
                   hoverinfo = 'text',
                   text = ~skills,
                   marker = list(colors = c(color = brewer.pal(length(skills),"Paired")), # colors do not correspond to colors in network graph
-                                line = list(color = '#FFFFFF', width = 3)),
+                                line = list(color = '#FFFFFF', width = 2)),
                   showlegend = TRUE
           ) %>%
           layout(title = 'Skills',
@@ -322,14 +311,13 @@ function(input, output, session) {
         output$piePlotNeeds <- renderPlotly({
           needs = needsKeywords()
           frequencies <-as.data.frame(table(needs))
-          #rownames(frequencies) = frequencies$needs
           plot_ly(frequencies, labels = ~needs, values = ~Freq, type = 'pie',
                   textposition = 'inside',
                   textinfo = 'percent',
                   hoverinfo = 'text',
                   text = ~needs,
                   marker = list(colors = c(color = brewer.pal(length(needs),"Paired")),
-                                line = list(color = '#FFFFFF', width = 3)),
+                                line = list(color = '#FFFFFF', width = 2)),
                   showlegend = TRUE
           ) %>%
           layout(title = 'Needs',
@@ -414,12 +402,17 @@ function(input, output, session) {
           data
         }
         
-        querySkillsNeeds <- function(){
-          sql_db <- dbConnect(SQLite(), "db/data.sqlite")
-          data <- dbGetQuery(sql_db, "SELECT skills, needs FROM skillshare") 
+        removeUser <- function(user_id) {
+          sql_db <- dbConnect(SQLite(), sql_fname)
+          dbExecute(sql_db, sprintf("DELETE FROM skillshare WHERE rowid = %s", user_id))
           dbDisconnect(sql_db)
-          colnames(data) <- c("skills", "needs")
-          data
+        }
+        
+        editData <- function(values, user_id){
+          query <- sprintf("UPDATE skillshare SET %s WHERE rowid = %s", values, user_id)
+          sql_db <- dbConnect(SQLite(), sql_fname)
+          dbExecute(sql_db, query)
+          dbDisconnect(sql_db)
         }
         
         saveData <- function(data) {
@@ -431,13 +424,6 @@ function(input, output, session) {
           query <- sprintf("INSERT INTO skillshare VALUES (CURRENT_TIMESTAMP, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s %s')", 
                            firstName, lastName, trimws(data$email), skills, needs, clean_text(data$needsDetail), clean_text(data$skillsDetail), 
                            clean_text(data$department), firstName, lastName)
-          sql_db <- dbConnect(SQLite(), sql_fname)
-          dbExecute(sql_db, query)
-          dbDisconnect(sql_db)
-        }
-
-        editData <- function(values, user_id){
-          query <- sprintf("UPDATE skillshare SET %s WHERE rowid = %s", values, user_id)
           sql_db <- dbConnect(SQLite(), sql_fname)
           dbExecute(sql_db, query)
           dbDisconnect(sql_db)
