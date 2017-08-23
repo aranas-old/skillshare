@@ -45,7 +45,7 @@ function(input, output, session) {
         })
 
         observeEvent(input$submitEdit,{
-          userInfo <- getUserInfo(value$current)
+          userInfo <- queryUserInfo(value$current)
           changes = c()
           # @Sophie, I couldn't figure out quickly how to only keep track of the form edits so I followed this ugly approach: added suffix _edited to all form units and 
           # compared values to the ones stored in the db. Really ugly, but not urgent to be fixed. Do you know a better solution w/o spending more than 10' on this?
@@ -91,7 +91,7 @@ function(input, output, session) {
           x
         }
         remove_empty <- function(x){x[x != ""]}
-        data_to_list <- function(x){unique(remove_empty(trimws(unlist(strsplit(x, ",")))))}
+        data_to_list <- function(x){remove_empty(trimws(unlist(strsplit(x, ","))))}
         string_to_list <- function(x){remove_empty(trimws(unlist(strsplit(x, ","))))}
         
         # check the vailidity of the e-mail format:
@@ -109,13 +109,37 @@ function(input, output, session) {
           dat
         })
         
-        skillsNeedsKeywords <- reactive({
+        getBasicInfo <- reactive({
           input$submit
           input$submitEdit
-          data = getSkillsNeeds()
-          all_unique_keywords = data_to_list(paste(data$skills, ", ", data$needs))
+          data = queryBasicData()
+          data
+        })
+        
+        skillsNeedsUnique <- reactive({
+          input$submit
+          input$submitEdit
+          data = querySkillsNeeds()
+          all_unique_keywords = unique(data_to_list(paste(data$skills, ", ", data$needs)))
           all_unique_keywords
         })
+        
+        skillsKeywords <- reactive({
+          input$submit
+          input$submitEdit
+          data = querySkillsNeeds()
+          skills = data_to_list(data$skills)
+          skills
+        })
+        
+        needsKeywords <- reactive({
+          input$submit
+          input$submitEdit
+          data = querySkillsNeeds()
+          needs = data_to_list(data$needs)
+          needs
+        })
+        
         
         # Select relevant information to visualize in table
         output$database <- DT::renderDataTable({
@@ -133,11 +157,11 @@ function(input, output, session) {
           selectInput("department", "Department", choices=departments)
         })
         output$skillsSelector <- renderUI({
-          skills_and_needs <- skillsNeedsKeywords()
+          skills_and_needs <- skillsNeedsUnique()
           selectInput("skills", tagList("Skills", span("*", class = "mandatory_star")), choices = skills_and_needs, multiple = TRUE)
         })
         output$needsSelector <- renderUI({
-          skills_and_needs <- skillsNeedsKeywords()
+          skills_and_needs <- skillsNeedsUnique()
           selectInput("needs", "Needs", choices = skills_and_needs, multiple = TRUE)
         })
         
@@ -148,58 +172,45 @@ function(input, output, session) {
           input$submit # update nodes whenever new data is submitted
           input$submitEdit  # or edited
           
-          skills_and_needs <- getSkillsNeeds()
-          
           # find pairs of people where skills match needs
           df_pairs <- data.frame()
           nodes <- data.frame()
-          df <- dat()
-          skills <- string_to_list(df$skills) # reads ALL skills into a list
-          needs <- c()  # reads Needs column and processes each line separately
-          for (row in 1:nrow(df)){
-            if (is.na(df$needs[row])){
-              needs <- rbind(needs, '')  # participant has no needs but we need to keep the row, so rbind it
-            } else {
-              needs <- rbind(needs, paste(string_to_list(df$needs[row]), collapse = ","))
-            }
-          }
-          for (row in 1:nrow(df)){
-            currentskill <- string_to_list(df$skills[row])
-            currentneed <- string_to_list(df$needs[row])
-            for (nskill in currentskill) {
+          
+          data = getBasicInfo()
+          skills = strsplit(data$skills, ", ")
+          # Go through Needs instead of Skills, they are less
+          for (row in 1:nrow(data)){
+            current_need <- string_to_list(data$needs[row])
+            for (need in current_need) {
               combined <- 0
-              to_ind <- grep(paste("(^|,| ,)", nskill, "($|,)", sep = ""), needs, ignore.case=TRUE)
-              if (length(to_ind)>0){  # first check if skill is needed
-                to <- to_ind
-                from <- rep(row, length(to))#rep(df$fullName[row], length(to))
-                title <- nskill
-                if (length(to) != 0) {
-                  combined <- rbind(from, to, title)
-                  df_pairs <- rbind(df_pairs, as.data.frame(t(combined)))
-                }
+              idx <- grep(need, skills, ignore.case = TRUE)
+              if (length(idx)>0){
+                from = idx
+                to = rep(row, length(from))
+                title <- need
+                combined <- rbind(to, from, title)
+                df_pairs <- rbind(df_pairs, as.data.frame(t(combined)))
               }
             }
             nodes <- rbind(nodes, data.frame(id = row,
-                                             fullName = df$fullName[row],
-                                             skills = paste(currentskill, collapse = ","),
-                                             needs = paste(currentneed, collapse = ","),
-                                             department = paste(df$department[row], collapse = ",")))
+                                             fullName = data$fullName[row],
+                                             skills = data$skills[row],
+                                             needs = data$needs[row],
+                                             department = data$department[row]))
           }
           
-          df_pairs$title <- as.character(df_pairs$title)
           df_pairs <- df_pairs[order(df_pairs$title),]
           df_pairs$title <- as.factor(df_pairs$title)
-          count <- data.frame()
-          for (row in 1:nrow(df)){
-            name <- df$fullName[row]
-            if (any(df_pairs == name)) {
-              count = rbind(count, data.frame(Connections = length(which(df_pairs == name)) * 2))
+          count <- data.frame()  # FIXME: we have this info already, no reason to go through data twice
+          for (row in 1:nrow(data)){
+            if (any(df_pairs == data$fullName[row])) {
+              count = rbind(count, data.frame(Connections = length(which(df_pairs == data$fullName[row])) * 2))
             } else {
               count = rbind(count, data.frame(Connections = 4))
             }
           }
           nodes <- cbind(nodes, data.frame(Connections = count))
-          graphinfo <- list(nodes = nodes, df_pairs = df_pairs, skills = skills, needs = needs) # concat all variables that are accessed elsewhere in code
+          graphinfo <- list(nodes = nodes, df_pairs = df_pairs) # concat all variables that are accessed elsewhere in code
           graphinfo
         })
 
@@ -209,7 +220,7 @@ function(input, output, session) {
           graphinfo <- node_pairs()
           nodes <- graphinfo$nodes
           df_pairs <- graphinfo$df_pairs
-          skills <- graphinfo$skills
+          skills = skillsKeywords()
           # create color palette
           palet = colorRampPalette(brewer.pal(length(unique(skills)), "Paired"))  # Pastel1 has less colors
           colors = data.frame(skills = sort(unique(skills)), colors = c(color = palet(length(unique(skills)))))
@@ -219,7 +230,7 @@ function(input, output, session) {
           nodes$label <- NULL # Node label
           #nodes$title <- paste0("Name : ", nodes$id, "<br> Email : ", nodes$Email , "<br> Skill : ", nodes$Skills)
           nodes$title <- nodes$fullName #nodes$id
-          nodes$size <- nodes$Connections # Node size
+          nodes$size <- nodes$Connections * 3 # Increase node size
           nodes$borderWidth <- 2 # Node border width
           nodes$font.size <- 0
           #set nodes colors
@@ -261,7 +272,7 @@ function(input, output, session) {
           graphinfo <- node_pairs()
           nodes <- graphinfo$nodes
           df_pairs <- graphinfo$df_pairs
-          skills <- graphinfo$skills
+          skills = skillsKeywords()
           #create color palette
           palet = colorRampPalette(brewer.pal(length(unique(skills)), "Paired"))   # Pastel1 has less colors
           colors = data.frame(skills = sort(unique(skills)), colors = c(color = palet(length(unique(skills)))))
@@ -291,36 +302,34 @@ function(input, output, session) {
         ### pie plots #####
         #TODO: plots should update together with graph and table when new data is submitted
         output$piePlotSkills <- renderPlotly({
-          graphinfo <- node_pairs()
-          frequencies <-as.data.frame(table(graphinfo$skills))
-          plot_ly(frequencies, labels = ~Var1, values = ~Freq, type = 'pie',
+          skills = skillsKeywords()
+          frequencies <-as.data.frame(table(skills))
+          plot_ly(frequencies, labels = ~skills, values = ~Freq, type = 'pie',
                   textposition = 'inside',
                   textinfo = 'percent',
-                  #insidetextfont = list(color='#FFFFFF'),
+                  #insidetextfont = list(color='#FFFFFF'), default color is black
                   hoverinfo = 'text',
-                  text = frequencies$Var1,
-                  marker = list(colors = c(color = brewer.pal(length(frequencies$Var1),"Paired")), # colors do not correspond to colors in network graph
-                                line = list(color = '#FFFFFF', width = 5)),
+                  text = ~skills,
+                  marker = list(colors = c(color = brewer.pal(length(skills),"Paired")), # colors do not correspond to colors in network graph
+                                line = list(color = '#FFFFFF', width = 3)),
                   showlegend = TRUE
           ) %>%
-            layout(title = 'Skills',
-                   xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
-                   yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+          layout(title = 'Skills',
+                 xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+                 yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
         })
 
         output$piePlotNeeds <- renderPlotly({
-          graphinfo <- node_pairs()
-          needs <- unlist(strsplit(graphinfo$needs, ","))
+          needs = needsKeywords()
           frequencies <-as.data.frame(table(needs))
           #rownames(frequencies) = frequencies$needs
-          plot_ly(frequencies, labels = frequencies$needs, values = ~Freq, type = 'pie',
+          plot_ly(frequencies, labels = ~needs, values = ~Freq, type = 'pie',
                   textposition = 'inside',
                   textinfo = 'percent',
-                  #insidetextfont = list(color='#FFFFFF'), # leave black font color
                   hoverinfo = 'text',
-                  text = frequencies$needs,
-                  marker = list(colors = c(color = brewer.pal(length(frequencies$needs),"Paired")),
-                                line = list(color = '#FFFFFF', width = 5)),
+                  text = ~needs,
+                  marker = list(colors = c(color = brewer.pal(length(needs),"Paired")),
+                                line = list(color = '#FFFFFF', width = 3)),
                   showlegend = TRUE
           ) %>%
           layout(title = 'Needs',
@@ -337,7 +346,7 @@ function(input, output, session) {
                           } else {  # when user clicks on table "Details" button
                               current = input$details_button
                           }
-                          userInfo <- getUserInfo(current)
+                          userInfo <- queryUserInfo(current)
                           showModal(modalDialog(
                             title= sprintf("%s (%s)", userInfo$fullName, userInfo$email),
                             renderUI({  # added na.omit on values that could be non available (we don't need to show NA to the user)
@@ -357,8 +366,8 @@ function(input, output, session) {
         })
 
         observeEvent(input$buttonEdit, {
-            skills_and_needs <- skillsNeedsKeywords()
-            userInfo <- getUserInfo(value$current)
+            skills_and_needs <- skillsNeedsUnique()
+            userInfo <- queryUserInfo(value$current)
             if (!is.null(userInfo$department) &&  userInfo$department %in% departments){  # some of the inserted fields don't exist in the departments list and the app hangs
               department_value = userInfo$department
             } else { 
@@ -390,14 +399,22 @@ function(input, output, session) {
           data
         }
         
-        getUserInfo <- function(user_id) {
+        queryUserInfo <- function(user_id) {
           sql_db <- dbConnect(SQLite(), sql_fname)
           data <- dbGetQuery(sql_db, sprintf("SELECT * FROM skillshare WHERE rowid = %s", user_id))
           dbDisconnect(sql_db)
           data
         }
         
-        getSkillsNeeds <- function(){
+        queryBasicData <- function() {
+          sql_db <- dbConnect(SQLite(), sql_fname)
+          data <- dbGetQuery(sql_db, "SELECT fullName, skills, needs, department FROM skillshare")
+          dbDisconnect(sql_db)
+          colnames(data) <- c("fullName", "skills", "needs", "department")
+          data
+        }
+        
+        querySkillsNeeds <- function(){
           sql_db <- dbConnect(SQLite(), "db/data.sqlite")
           data <- dbGetQuery(sql_db, "SELECT skills, needs FROM skillshare") 
           dbDisconnect(sql_db)
