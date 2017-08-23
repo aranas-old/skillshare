@@ -16,11 +16,12 @@ css <- ".mandatory_star { color: red; }
         .shiny-output-error:before {
           visibility: visible;
           content: 'An error occurred. Please contact the admin.'; }
+        .navbar-header .navbar-brand {padding:0;margin:-20px 0;padding:1px}
        "
 
 shinyUI(
-  navbarPage(#titlePanel(title=div(img(src="images/combined_logos.png", height= 50, margin=0), "Skillshare Database")),
-    title="Skillshare database",
+  navbarPage(titlePanel(title=div(class=".navbar-header .navbar-brand", img(src="images/combined_logos.png", height= 50))), #margin:-20px is an ugly solution but it works for now :S
+    #title="Skillshare database",
     tabPanel("Data",
       div(class="outer",
              tagList(
