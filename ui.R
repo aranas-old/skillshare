@@ -42,13 +42,17 @@ shinyUI(
                                  draggable = TRUE, top = 60, left = 20, right = "auto", bottom = "auto", width=300, heigth = "auto",
                                  style = "opacity: 0.80",
                                  fluidPage(
-                                    h4("How to"),
+                                   bsCollapse(id = "collapse", open = "How to",
+                                   bsCollapsePanel("How to",
                                     div('This database is meant to efficiently connect doctoral students by linking the ones who need help to the ones who can offer help - both in work as well as leisure.
                                           
                                           You can explore our database by interacting with both the network graph or the table. Just click on a circle to learn more about that persons skills & needs! Or explore who???s is helping out by hovering over the arrows!
                                           
                                           Would you like to join? Simply add your data and be part of our network!
+                                        
                                         '),
+                                    actionButton("More", "Show Less")
+                                    )),
                                    h4("Join the community!"),
                                    actionButton("buttonAdd", "Add Data"),
                                    bsModal("modaladd", "Add data", "buttonAdd", size = "small",
