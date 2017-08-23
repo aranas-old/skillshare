@@ -147,8 +147,8 @@ function(input, output, session) {
           df <- df[,c("firstName","lastName","skills","needs")]
           ##df <- df[order(df$firstName),]
           df$skills <- as.factor(df$skills) # set columns to factor if search field should be dropdown
-          datatable(df, filter = 'top') # TODO: put search fields on top of table  # colnames = c('First Name', 'Last Name', 'Skills', 'Needs') ?
-          data=data.frame(df,
+          DT::datatable(df, filter = 'top') # TODO: put search fields on top of table  # colnames = c('First Name', 'Last Name', 'Skills', 'Needs') ?
+          data=data.frame(df,options = list(pageLength = 5),
                           Details = shinyInput(actionButton, length(df$firstName), 'details', label = "Details", onclick = 'Shiny.onInputChange(\"details_button\",  this.id)'))
         },escape=FALSE)
         
