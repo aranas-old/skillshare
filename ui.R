@@ -19,10 +19,10 @@ css <- ".mandatory_star { color: red; }
        "
 
 shinyUI(
-  navbarPage(title="Skillshare database",
+  navbarPage(#titlePanel(title=div(img(src="images/combined_logos.png", height= 50, margin=0), "Skillshare Database")),
+    title="Skillshare database",
     tabPanel("Data",
       div(class="outer",
-          
              tagList(
                tags$head(
                  tags$link(rel="stylesheet", type="text/css"),#href="style.css"), through css we can edit the text size/font family
