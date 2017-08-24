@@ -37,7 +37,7 @@ shinyUI(
           fluidRow(
              column(6,visNetworkOutput("network"),
                     absolutePanel(id = "welcome", class = "panel panel-default", fixed = TRUE,
-                                  draggable = FALSE, top = 70, left = 20, right = "auto", bottom = "auto", width=250, heigth = "auto",
+                                  draggable = FALSE, top = 70, left = 20, right = "auto", bottom = "auto", width=350, heigth = "auto",
                                   style = "opacity: 0.80",
                                     bsCollapse(id = "collapsehowto", open = "NULL",
                                     bsCollapsePanel("How to", open = "NULL",
@@ -48,27 +48,7 @@ shinyUI(
                                           Would you like to join? Simply add your data and be part of our network!
                                         
                                         ')
-                                               ))),
-                    absolutePanel(id = "join", class = "panel panel-default", fixed = TRUE,
-                                  draggable = FALSE, top = 70, left = 280, right = "auto", bottom = "auto", width=200, heigth = "auto",
-                                  style = "opacity: 0.80",
-                                    bsCollapse(id = "collapsejoin", open = "NULL",
-                                    bsCollapsePanel("Join the Community!",
-                                           actionButton("buttonAdd", "Add your Data"),
-                                           bsModal("modaladd", "Add data", "buttonAdd", size = "small",
-                                                   HTML("Please fill in this form and press submit"),
-                                                   textInput("firstName", labelMandatory("First Name"), ""),
-                                                   textInput("lastName", labelMandatory("Last Name"), ""),
-                                                   textInput("email", labelMandatory("Email"), ""),
-                                                   uiOutput("skillsSelector"),
-                                                   textInput("skillsDetail", "Skill in detail", ""),
-                                                   uiOutput("needsSelector"),
-                                                   textInput("needsDetail", "Need in detail", ""),
-                                                   uiOutput("departmentSelector"),
-                                                   actionButton("submit", "Submit"))
-                                           )
-                                    )
-                                  )),
+                                               )))),
             column(6,DT::dataTableOutput("database"), tags$hr()
                    )
             )
@@ -92,6 +72,24 @@ Would you like to join? Simply add your data and be part of our network!
              splitLayout(#width="100%", #cellHeights = c("100%", "100%"),
              plotlyOutput("piePlotSkills"),
              plotlyOutput("piePlotNeeds"))
-    )
+    ),
+    tabPanel("Join the community!",
+             div('Thank you for joining the network! By filling in your skills you can give back to 
+                 our little the PhD community and open possibilities for more interaction across institutes
+                 and disciplines. Please also make sure to fill in some of your own needs. It may be that 
+                 people do not even know they posses a skill that could be helpful to others.'),
+             actionButton("buttonAdd", "Add your Data"),
+             bsModal("modaladd", "Add data", "buttonAdd", size = "small",
+                     HTML("Please fill in this form and press submit"),
+                     textInput("firstName", labelMandatory("First Name"), ""),
+                     textInput("lastName", labelMandatory("Last Name"), ""),
+                     textInput("email", labelMandatory("Email"), ""),
+                     uiOutput("skillsSelector"),
+                     textInput("skillsDetail", "Skill in detail", ""),
+                     uiOutput("needsSelector"),
+                     textInput("needsDetail", "Need in detail", ""),
+                     uiOutput("departmentSelector"),
+                     actionButton("submit", "Submit"))
+             )
     )
 )
