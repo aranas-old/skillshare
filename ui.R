@@ -37,8 +37,8 @@ shinyUI(
           fluidRow(
              column(6,visNetworkOutput("network"),
                     absolutePanel(id = "welcome", class = "panel panel-default", fixed = TRUE,
-                                  draggable = FALSE, top = 70, left = 20, right = "auto", bottom = "auto", width=350, heigth = "auto",
-                                  style = "opacity: 0.80",
+                                  draggable = TRUE, top = 50, left = 20, right = "auto", bottom = "auto", width=350, heigth = "auto",
+                                  style = "opacity: 0.9",
                                     bsCollapse(id = "collapsehowto", open = "NULL",
                                     bsCollapsePanel("How to", open = "NULL",
                                           div('This database is meant to efficiently connect doctoral students by linking the ones who need help to the ones who can offer help - both in work as well as leisure.
