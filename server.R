@@ -150,7 +150,7 @@ function(input, output, session) {
           df <- df[,c("firstName","lastName","skills","needs")]
           #df <- df[order(df$firstName),]
           df$skills <- as.factor(df$skills) # set columns to factor if search field should be dropdown
-          datatable(df, filter = 'top') # TODO: put search fields on top of table  # colnames = c('First Name', 'Last Name', 'Skills', 'Needs') ?
+          DT::datatable(df, filter = 'top') # TODO: put search fields on top of table  # colnames = c('First Name', 'Last Name', 'Skills', 'Needs') ?
           data=data.frame(df,
                           Details = shinyInput(actionButton, length(df$firstName), 'details', label = "Details", onclick = 'Shiny.onInputChange(\"details_button\",  this.id)'))
         },escape=FALSE)
@@ -236,7 +236,7 @@ function(input, output, session) {
           edges$width <- 6 # edge shadow
           
           #output network
-          visNetwork(nodes, edges, width="100%") %>%
+          visNetwork(nodes, edges) %>%
             visIgraphLayout(layout = "layout_in_circle") %>%
             visOptions(highlightNearest = FALSE) %>%  #nodesIdSelection = TRUE #selectedBy = list(variable = "Skills")
             visInteraction(hover = TRUE, hoverConnectedEdges = TRUE, dragNodes = FALSE, zoomView = FALSE, tooltipDelay = 150, dragView = FALSE) %>%
