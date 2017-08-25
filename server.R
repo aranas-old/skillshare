@@ -61,7 +61,7 @@ function(input, output, session) {
         changes = c(changes, sprintf("fullName = '%s'", fullName))
       }
       if (userInfo$email != input$email_edited){
-        changes = c(changes, sprintf("email = '%s'", clean_text(input$email_edited)))
+        changes = c(changes, sprintf("email = '%s'", trimws(input$email_edited)))
       }
       edited_skill = clean_list_to_string(input$skills_edited)
       if (clean_list_to_string(userInfo$skills) != edited_skill){
@@ -151,8 +151,12 @@ function(input, output, session) {
     
     # Select relevant information to visualize in table
     output$database <- DT::renderDataTable({
+      input$submit # update nodes whenever new data is submitted
+      input$submitEdit  # or edited
+      input$submitDelete # or deleted
+      
       df = dat()
-      df <- df[,c("firstName","lastName","skills","needs")]
+      df <- df[,c("rowid", "firstName","lastName","skills","needs")]
       #df <- df[order(df$firstName),]
       df$skills <- as.factor(df$skills) # set columns to factor if search field should be dropdown
       DT::datatable(df, filter = 'top') # TODO: put search fields on top of table  # colnames = c('First Name', 'Last Name', 'Skills', 'Needs') ?
@@ -195,13 +199,13 @@ function(input, output, session) {
           skilled_idx <- grep(need, skills, ignore.case = TRUE)
           if (length(skilled_idx) > 0){
             node_connection_size = node_connection_size + length(skilled_idx)  # increase by connections of current skill
-            from = skilled_idx
-            to = rep(row, length(from))
+            from = data$rowid[skilled_idx]  # due to deletions, rowid != the number of the row in the db, need to adjust.
+            to = rep(data$rowid[row], length(from))
             title = need
             edges <- rbind(edges, as.data.frame(t(rbind(to, from, title))))
           }
         }
-        nodes <- rbind(nodes, data.frame(id = row,
+        nodes <- rbind(nodes, data.frame(id = data$rowid[row],
                                          fullName = data$fullName[row],
                                          skills = data$skills[row],
                                          needs = data$needs[row],
@@ -260,10 +264,13 @@ function(input, output, session) {
     # interaction graph & datatable (both search function updates as well as selection)
     observe({
       indx = input$database_rows_all      # rows on all pages (after being filtered)
-      sel = input$database_rows_selected
-      if (!is.null(sel)){
-        indx = sel
+      if (!is.null(input$database_rows_selected)){
+         indx = input$database_rows_selected
       }
+      #if (!is.null(indx)){
+      data = getBasicInfo()
+      #    indx = data$rowid[indx]
+      #}
       #access reactive values
       graphinfo <- node_pairs()
       nodes <- graphinfo$nodes
@@ -281,8 +288,8 @@ function(input, output, session) {
       edges$color <- colors$colors[match(edges$title, colors$skills)]  # line color
       # Gray out non selected nodes
       #FIX:so ugly, there must be a more elegant way?
-      gray_out=intersect(which(edges$from%in%setdiff(edges$from,nodes$id[indx])),which(edges$to%in%setdiff(edges$to,nodes$id[indx])))  # FIXME
-      edges$color <- as.character(edges$color) # weird interference with the factor level
+      gray_out=intersect(which(edges$from%in%setdiff(edges$from,data$rowid[indx])),which(edges$to%in%setdiff(edges$to,data$rowid[indx])))  # FIXME
+      #edges$color <- as.character(edges$color) # weird interference with the factor level
       edges$color[gray_out] <- "fff" #"#d3d3d3"
       edges$color <- as.factor(edges$color)
       edges$width <- 5    # edge shadow
@@ -338,7 +345,8 @@ function(input, output, session) {
       if (!is.null(input$current_node_id)) {  # when user clicks on network nodes
         current = input$current_node_id
       } else {  # when user clicks on table "Details" button
-        current = input$details_button
+        data = getBasicInfo()
+        current = data$rowid[as.numeric(input$details_button)]  # need to update id according to data rowid. as.numeric is compulsory otherwise is returns NA
       }
       userInfo <- queryUserInfo(current)
       showModal(modalDialog(
@@ -352,7 +360,7 @@ function(input, output, session) {
           HTML(sprintf("Skills: %s </br> %s </br> %s </br> %s</br>Department: %s</br>",  #TODO: Really ugly UI, fix
                        userInfo$skills, na.omit(userInfo$skillsDetail), needs, userInfo$needsDetail, userInfo$department))
         }),
-        footer = modalButton("close"),actionButton("buttonEdit","Edit data"), actionButton("buttonDelete", "Delete data")
+        footer = modalButton("close"),actionButton("buttonEdit","Make edits"), actionButton("buttonDelete", "Delete data")
       ))
       value$current <- current
       session$sendCustomMessage(type = "resetValue", message = "current_node_id")
@@ -388,7 +396,7 @@ function(input, output, session) {
     observeEvent(input$buttonDelete,{
       userInfo <- queryUserInfo(value$current)
       showModal(modalDialog(
-        title = sprintf("Are you sure you want to delete data for: %s", userInfo$fullName, " ?"),
+        title = sprintf("Are you sure you want to delete all data for: %s (%s)", userInfo$fullName, userInfo$email, " ?"),
         footer = tagList(modalButton("No, cancel"), actionButton("submitDelete", "Confirm & Delete")))
       )
       observeEvent(input$submitDelete,{
@@ -400,7 +408,7 @@ function(input, output, session) {
     ### SQL Lite database
     loadData <- function() {
       con <- dbConnect(SQLite(), sql_fname)
-      data <- dbGetQuery(con, "SELECT * FROM skillshare")
+      data <- dbGetQuery(con, "SELECT rowid, * FROM skillshare")
       dbDisconnect(con)
       data
     }
@@ -414,18 +422,16 @@ function(input, output, session) {
     
     queryBasicData <- function() {
       sql_db <- dbConnect(SQLite(), sql_fname)
-      data <- dbGetQuery(sql_db, "SELECT fullName, skills, needs, department FROM skillshare")
+      data <- dbGetQuery(sql_db, "SELECT rowid, fullName, skills, needs, department FROM skillshare")
       dbDisconnect(sql_db)
-      colnames(data) <- c("fullName", "skills", "needs", "department")
+      colnames(data) <- c("rowid","fullName", "skills", "needs", "department")
       data
     }
     
     removeUser <- function(user_id) {
       sql_db <- dbConnect(SQLite(), sql_fname)
       dbExecute(sql_db, sprintf("DELETE FROM skillshare WHERE rowid = %s", user_id))
-      data <- dbGetQuery(sql_db, "SELECT fullName, skills, needs, department FROM skillshare")
       dbDisconnect(sql_db)
-      data
     }
     
     editData <- function(values, user_id){
