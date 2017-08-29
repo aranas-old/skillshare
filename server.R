@@ -96,24 +96,15 @@ function(input, output, session) {
     remove_empty <- function(x){x[x != ""]}
     data_to_list <- function(x){remove_empty(trimws(unlist(strsplit(x, ","))))}
     string_to_list <- function(x){remove_empty(trimws(unlist(strsplit(x, ","))))}
-    
     # check the vailidity of the e-mail format:
     isValidEmail <- function(x) {
       grepl("\\<[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}\\>", as.character(x), ignore.case=TRUE)
     }
     
     ### Table #####
-    # have datatable content as reactive value to be accessed later (i.e. pop-up for details)
-    # update with every submit/edit/delete
-    dat <- reactive({   # WILL BE REMOVED, we don't need to load all data
-      input$submit
-      input$submitEdit
-      input$submitDelete
-      dat = loadData()
-      dat
-    })
-    
     getBasicInfo <- reactive({
+      # have database content as reactive value to be accessed later (i.e. pop-up for details)
+      # update with every submit/edit/delete
       input$submit
       input$submitEdit
       input$submitDelete
@@ -121,47 +112,41 @@ function(input, output, session) {
       data
     })
     
+    getRowIDs <- reactive({
+      data = getBasicInfo()  # query DB to get fullName, skills, needs and department
+      data$rowid
+    })
+    
     skillsNeedsUnique <- reactive({
-      input$submit
-      input$submitEdit
-      input$submitDelete
       data = getBasicInfo()
       all_unique_keywords = unique(data_to_list(paste(data$skills, ", ", data$needs)))
       all_unique_keywords
     })
     
     skillsKeywords <- reactive({
-      input$submit
-      input$submitEdit
-      input$submitDelete
       data = getBasicInfo()
       skills = data_to_list(data$skills)
       skills
     })
     
     needsKeywords <- reactive({
-      input$submit
-      input$submitEdit
-      input$submitDelete
       data = getBasicInfo()
       needs = data_to_list(data$needs)
       needs
     })
     
-    
     # Select relevant information to visualize in table
     output$database <- DT::renderDataTable({
-      input$submit # update nodes whenever new data is submitted
-      input$submitEdit  # or edited
-      input$submitDelete # or deleted
-      
-      df = dat()
-      df <- df[,c("rowid", "firstName","lastName","skills","needs")]
-      #df <- df[order(df$firstName),]
-      df$skills <- as.factor(df$skills) # set columns to factor if search field should be dropdown
+      input$submit
+      input$submitDelete
+      input$submitEdit
+      #print("TABLE")
+      df = getBasicInfo()
+      #df <- df[order(df$fullName),] # FIXME: This also changes the order of the row numbers :/ 
+      df <- df[ , !(names(df) %in% "rowid")]  # No need to show rowid, it's for internal purposes
       DT::datatable(df, filter = 'top') # TODO: put search fields on top of table  # colnames = c('First Name', 'Last Name', 'Skills', 'Needs') ?
       data=data.frame(df,
-                      Details = shinyInput(actionButton, length(df$firstName), 'details', label = "Details", onclick = 'Shiny.onInputChange(\"details_button\",  this.id)'))
+                      Details = shinyInput(actionButton, length(df$fullName), 'details', label = "Details", onclick = 'Shiny.onInputChange(\"details_button\",  this.id)'))
     },escape=FALSE)
     
     #### used in the "Add data" form ####
@@ -181,14 +166,13 @@ function(input, output, session) {
     ##### Network graph #####
     #########################
     node_pairs <- reactive({
+      input$submit
+      input$submitDelete
+      input$submitEdit
+      #print("GRAPH")
       # set content of graph (nodes & edges). Find pairs of people where skills match needs
-      input$submit # update nodes whenever new data is submitted
-      input$submitEdit  # or edited
-      input$submitDelete # or deleted
-      
       edges <- data.frame()
       nodes <- data.frame()
-      
       data = getBasicInfo()
       skills = strsplit(data$skills, ", ")
       # Go through Needs instead of Skills, they are less
@@ -219,6 +203,7 @@ function(input, output, session) {
     # set visual parameters of graph
     networkgraph <- reactive({
       # access nodes & edges reactive values
+      #print("NETGRAPH")
       graphinfo <- node_pairs()
       nodes <- graphinfo$nodes
       edges <- graphinfo$edges
@@ -232,7 +217,7 @@ function(input, output, session) {
       nodes$shadow <- TRUE # Nodes will drop shadow
       nodes$label <- NULL # Node label
       nodes$title <- nodes$fullName
-      nodes$size <- 14 # I actually like uniformity in the nodes, but if you want to play with the size of the connections then: #nodes$connection_size * 3 (or any other number)
+      nodes$size <- 12 # I actually like uniformity in the nodes, but if you want to play with the size of the connections then: #nodes$connection_size * 3 (or any other number)
       nodes$font.size <- 0
       #set nodes colors
       nodes$color.background <- "#4bd8c1"
@@ -243,9 +228,11 @@ function(input, output, session) {
       #edges$color <- colors$colors[match(edges$title, colors$skills)]  # line color
       edges$arrows <- "to" # arrows: 'from', 'to', or 'middle'
       edges$smooth <- FALSE    # should the edges be curved?
-      edges$width <- 6 # edge shadow
-      
-      #output network
+      edges$width <- 5 # edge shadow
+      #output network   --- It would be nice if we were UPDATING here instead of calling visNetwork
+      #visNetworkProxy("network") %>%
+      #  visUpdateNodes(nodes) %>%
+      #  visUpdateEdges(edges)
       visNetwork(nodes, edges) %>%
         visIgraphLayout(layout = "layout_in_circle") %>%
         visOptions(highlightNearest = FALSE) %>%  #nodesIdSelection = TRUE #selectedBy = list(variable = "Skills")
@@ -262,15 +249,11 @@ function(input, output, session) {
       selectRows(proxy, NULL)
     })
     # interaction graph & datatable (both search function updates as well as selection)
-    observe({
+    observeEvent(c(input$database_rows_all,input$database_rows_selected), {
       indx = input$database_rows_all      # rows on all pages (after being filtered)
       if (!is.null(input$database_rows_selected)){
          indx = input$database_rows_selected
       }
-      #if (!is.null(indx)){
-      data = getBasicInfo()
-      #    indx = data$rowid[indx]
-      #}
       #access reactive values
       graphinfo <- node_pairs()
       nodes <- graphinfo$nodes
@@ -288,17 +271,17 @@ function(input, output, session) {
       edges$color <- colors$colors[match(edges$title, colors$skills)]  # line color
       # Gray out non selected nodes
       #FIX:so ugly, there must be a more elegant way?
-      gray_out=intersect(which(edges$from%in%setdiff(edges$from,data$rowid[indx])),which(edges$to%in%setdiff(edges$to,data$rowid[indx])))  # FIXME
-      #edges$color <- as.character(edges$color) # weird interference with the factor level
+      rowIDs = getRowIDs()
+      gray_out=intersect(which(edges$from%in%setdiff(edges$from,rowIDs[indx])),which(edges$to%in%setdiff(edges$to,rowIDs[indx])))  # FIXME
       edges$color[gray_out] <- "fff" #"#d3d3d3"
       edges$color <- as.factor(edges$color)
       edges$width <- 5    # edge shadow
       edges$arrows <- "to"
       #FIX: for some reason the tip of the arrows do not change color
-      #update network
+      # Update network
       visNetworkProxy("network") %>%
-        visUpdateNodes(nodes) %>%
-        visUpdateEdges(edges)
+      visUpdateNodes(nodes) %>%
+      visUpdateEdges(edges)
     })
     
     ### pie plots #####
@@ -399,10 +382,10 @@ function(input, output, session) {
         title = sprintf("Are you sure you want to delete all data for: %s (%s)", userInfo$fullName, userInfo$email, " ?"),
         footer = tagList(modalButton("No, cancel"), actionButton("submitDelete", "Confirm & Delete")))
       )
-      observeEvent(input$submitDelete,{
-        removeUser(value$current)
-        removeModal() 
-      })
+    })
+    observeEvent(input$submitDelete,{
+      removeUser(value$current)
+      removeModal()
     })
     
     ### SQL Lite database
@@ -432,6 +415,13 @@ function(input, output, session) {
       sql_db <- dbConnect(SQLite(), sql_fname)
       dbExecute(sql_db, sprintf("DELETE FROM skillshare WHERE rowid = %s", user_id))
       dbDisconnect(sql_db)
+      removevisNetworkNode()
+    }
+    
+    removevisNetworkNode <- function() {
+      # Quite of a hack. Remove a random node so that visNetwork won't complain that the dataframe is missing a data point.
+      visNetworkProxy("network") %>%   
+        visRemoveNodes("network", 1)
     }
     
     editData <- function(values, user_id){
