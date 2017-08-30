@@ -17,6 +17,9 @@ sql_fname = "db/data.sqlite"
 # TODO: Check if the list is complete
 departments <- c("Centre for Language Studies (CLS), Radboud University", "Centre for Language and Speech Technology (CLST), Radboud University", "Donders Centre for Cognition (DCC), Donders", "Institute for Logic, Language and Computation (ILLC), University of Amsterdam", "Neurobiology of Language (NB), MPI", "Language and Cognition (LC), MPI", "Language and Genetics (GEN), MPI", "Language Development, MPI", "Psychology of Language (POL), MPI", "Neurogenetics of Vocal Communication Group, MPI", "RadboudUMC", "UMC Utrecht", "Maastricht University", "Tilburg University", "Universitetit Leiden")
 departments <- departments[order(departments)]  # sort alphabetically
+# #create color palette: get all available colors (max is 60 I think)
+qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
+color_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
 
 function(input, output, session) {
   observe({
@@ -108,8 +111,7 @@ function(input, output, session) {
       input$submit
       input$submitEdit
       input$submitDelete
-      data = queryBasicData()  # query DB to get fullName, skills, needs and department
-      data
+      queryBasicData()  # query DB to get fullName, skills, needs and department
     })
     
     getRowIDs <- reactive({
@@ -119,20 +121,25 @@ function(input, output, session) {
     
     skillsNeedsUnique <- reactive({
       data = getBasicInfo()
-      all_unique_keywords = unique(data_to_list(paste(data$skills, ", ", data$needs)))
-      all_unique_keywords
+      unique(data_to_list(paste(data$skills, ", ", data$needs)))  # returns all unique keywords (needs + skills)
+    })
+    
+    getColorPalette <- reactive({
+       skills = unique(skillsKeywords())
+       ####palet = colorRampPalette(brewer.pal(length(unique(skills)), "Paired"))   # Pastel1 has less colors
+       ####colors = data.frame(skills = sort(unique(skills)), colors = c(color = palet(length(unique(skills)))))
+       # If you don't like the sampling from all colors solution, we can go back to the brewer (lines above) that has better combinations but only 11 colors max.
+       sample(color_vector, length(skills), replace=TRUE)  # replace will come handy when the number of skills/needs exceeds the num of available colors
     })
     
     skillsKeywords <- reactive({
       data = getBasicInfo()
-      skills = data_to_list(data$skills)
-      skills
+      data_to_list(data$skills)
     })
     
     needsKeywords <- reactive({
       data = getBasicInfo()
-      needs = data_to_list(data$needs)
-      needs
+      data_to_list(data$needs)
     })
     
     # Select relevant information to visualize in table
@@ -194,19 +201,11 @@ function(input, output, session) {
       list(nodes = nodes, edges = edges) # returns nodes and edges (pairs)
     })
     
-    # set visual parameters of graph
-    networkgraph <- reactive({
-      # access nodes & edges reactive values
-      #print("NETGRAPH")
+    networkgraph <- reactive({  # Should this be a function instead of reactive?
+      # set visual parameters of graph
       graphinfo <- node_pairs()
       nodes <- graphinfo$nodes
       edges <- graphinfo$edges
-      skills = sort(unique(skillsKeywords()))
-      num_skills = length(skills)
-      # create color palette
-      palet = colorRampPalette(brewer.pal(num_skills, "Paired"))  # Pastel1 has less colors
-      colors = data.frame(skills = skills, colors = c(color = palet(num_skills)))
-      # set node parameters
       nodes$shape <- "dot"
       nodes$shadow <- TRUE # Nodes will drop shadow
       nodes$label <- NULL # Node label
@@ -219,14 +218,9 @@ function(input, output, session) {
       nodes$color.highlight.background <- "#4bd8c1"
       nodes$color.highlight.border <- "#006600"  #changed it to dark green instead of "red" because it looked like an error IMO. What do you think? :)
       #set edges parameters
-      #edges$color <- colors$colors[match(edges$title, colors$skills)]  # line color
       edges$arrows <- "to" # arrows: 'from', 'to', or 'middle'
-      edges$smooth <- FALSE    # should the edges be curved?
+      edges$smooth <- FALSE    # should the edges be curved?   -- Chara: I actually like the curved edges and the bouncing effect on loading so I vote for TRUE
       edges$width <- 5 # edge shadow
-      #output network   --- It would be nice if we were UPDATING here instead of calling visNetwork
-      #visNetworkProxy("network") %>%
-      #  visUpdateNodes(nodes) %>%
-      #  visUpdateEdges(edges)
       visNetwork(nodes, edges) %>%
         visIgraphLayout(layout = "layout_in_circle") %>%
         visOptions(highlightNearest = FALSE) %>%  #nodesIdSelection = TRUE #selectedBy = list(variable = "Skills")
@@ -252,26 +246,22 @@ function(input, output, session) {
       graphinfo <- node_pairs()
       nodes <- graphinfo$nodes
       edges <- graphinfo$edges
-      skills = skillsKeywords()
-      #create color palette
-      palet = colorRampPalette(brewer.pal(length(unique(skills)), "Paired"))   # Pastel1 has less colors
-      colors = data.frame(skills = sort(unique(skills)), colors = c(color = palet(length(unique(skills)))))
+      skills = unique(skillsKeywords())
+      colors = data.frame(skills = skills, colors = c(color = getColorPalette()))
       #change color
       nodes$color.background <- "fff" #"#d3d3d3" #lightgray
       nodes$color.border <- "#d3d3d3"
       nodes$color.background[indx] <- "#4bd8c1"
       nodes$color.border[indx] <- "#42b2a0"
-      #color all edges
-      edges$color <- colors$colors[match(edges$title, colors$skills)]  # line color
+      edges$color <- colors$colors[match(edges$title, colors$skills)]  #color all edges (lines)
       # Gray out non selected nodes
       #FIX:so ugly, there must be a more elegant way?
       rowIDs = getRowIDs()
       gray_out=intersect(which(edges$from%in%setdiff(edges$from,rowIDs[indx])),which(edges$to%in%setdiff(edges$to,rowIDs[indx])))  # FIXME
-      edges$color[gray_out] <- "fff" #"#d3d3d3"
       edges$color <- as.factor(edges$color)
+      edges$color[gray_out] <- "fff" # FIXME: Throws a weird error "invalid factor level, NA generated"
       edges$width <- 5    # edge shadow
       edges$arrows <- "to"
-      #FIX: for some reason the tip of the arrows do not change color
       # Update network
       visNetworkProxy("network") %>%
       visUpdateNodes(nodes) %>%
@@ -409,13 +399,6 @@ function(input, output, session) {
       sql_db <- dbConnect(SQLite(), sql_fname)
       dbExecute(sql_db, sprintf("DELETE FROM skillshare WHERE rowid = %s", user_id))
       dbDisconnect(sql_db)
-      removevisNetworkNode()
-    }
-    
-    removevisNetworkNode <- function() {
-      # Quite of a hack. Remove a random node so that visNetwork won't complain that the dataframe is missing a data point.
-      visNetworkProxy("network") %>%   
-        visRemoveNodes("network", 1)
     }
     
     editData <- function(values, user_id){
