@@ -137,9 +137,6 @@ function(input, output, session) {
     
     # Select relevant information to visualize in table
     output$database <- DT::renderDataTable({
-      input$submit
-      input$submitDelete
-      input$submitEdit
       #print("TABLE")
       df = getBasicInfo()
       #df <- df[order(df$fullName),] # FIXME: This also changes the order of the row numbers :/ 
@@ -147,6 +144,7 @@ function(input, output, session) {
       DT::datatable(df, filter = 'top') # TODO: put search fields on top of table  # colnames = c('First Name', 'Last Name', 'Skills', 'Needs') ?
       data=data.frame(df,
                       Details = shinyInput(actionButton, length(df$fullName), 'details', label = "Details", onclick = 'Shiny.onInputChange(\"details_button\",  this.id)'))
+      data
     },escape=FALSE)
     
     #### used in the "Add data" form ####
@@ -166,9 +164,6 @@ function(input, output, session) {
     ##### Network graph #####
     #########################
     node_pairs <- reactive({
-      input$submit
-      input$submitDelete
-      input$submitEdit
       #print("GRAPH")
       # set content of graph (nodes & edges). Find pairs of people where skills match needs
       edges <- data.frame()
