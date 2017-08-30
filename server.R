@@ -144,7 +144,6 @@ function(input, output, session) {
       DT::datatable(df, filter = 'top') # TODO: put search fields on top of table  # colnames = c('First Name', 'Last Name', 'Skills', 'Needs') ?
       data=data.frame(df,
                       Details = shinyInput(actionButton, length(df$fullName), 'details', label = "Details", onclick = 'Shiny.onInputChange(\"details_button\",  this.id)'))
-      data
     },escape=FALSE)
     
     #### used in the "Add data" form ####
