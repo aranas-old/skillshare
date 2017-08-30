@@ -45,6 +45,11 @@ function(input, output, session) {
       saveData(formData())
     })
     
+    observeEvent(input$submitDelete,{
+      removeUser(value$current)
+      removeModal()
+    })
+    
     observeEvent(input$submitEdit,{
       userInfo <- queryUserInfo(value$current)
       changes = c()
@@ -367,10 +372,7 @@ function(input, output, session) {
         footer = tagList(modalButton("No, cancel"), actionButton("submitDelete", "Confirm & Delete")))
       )
     })
-    observeEvent(input$submitDelete,{
-      removeUser(value$current)
-      removeModal()
-    })
+    
     
     ### SQL Lite database
     loadData <- function() {
