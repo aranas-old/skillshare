@@ -17,9 +17,9 @@ sql_fname = "db/data.sqlite"
 # TODO: Check if the list is complete
 departments <- c("Centre for Language Studies (CLS), Radboud University", "Centre for Language and Speech Technology (CLST), Radboud University", "Donders Centre for Cognition (DCC), Donders", "Institute for Logic, Language and Computation (ILLC), University of Amsterdam", "Neurobiology of Language (NB), MPI", "Language and Cognition (LC), MPI", "Language and Genetics (GEN), MPI", "Language Development, MPI", "Psychology of Language (POL), MPI", "Neurogenetics of Vocal Communication Group, MPI", "RadboudUMC", "UMC Utrecht", "Maastricht University", "Tilburg University", "Universitetit Leiden")
 departments <- departments[order(departments)]  # sort alphabetically
-# #create color palette: get all available colors (max is 60 I think)
-qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
-color_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
+# Create color palette: get all available colors (max is 60 I think)
+col_palts = brewer.pal.info[brewer.pal.info$category != 'seq',]  # Options: div, seq, qual. Get all but sequential ones. 
+color_vector = unlist(mapply(brewer.pal, col_palts$maxcolors, rownames(col_palts)))
 
 function(input, output, session) {
   observe({
@@ -252,9 +252,9 @@ function(input, output, session) {
       nodes <- graphinfo$nodes
       edges <- graphinfo$edges
       skills = unique(skillsKeywords())
-      colors = data.frame(skills = skills, colors = c(color = getColorPalette()))
+      colors = data.frame(skills = skills, colors = c(color = getColorPalette()), stringsAsFactors=FALSE)
       #change color
-      nodes$color.background <- "fff" #"#d3d3d3" #lightgray
+      nodes$color.background <- "fff"
       nodes$color.border <- "#d3d3d3"
       nodes$color.background[indx] <- "#4bd8c1"
       nodes$color.border[indx] <- "#42b2a0"
@@ -262,9 +262,8 @@ function(input, output, session) {
       # Gray out non selected nodes
       #FIX:so ugly, there must be a more elegant way?
       rowIDs = getRowIDs()
-      gray_out=intersect(which(edges$from%in%setdiff(edges$from,rowIDs[indx])),which(edges$to%in%setdiff(edges$to,rowIDs[indx])))  # FIXME
-      edges$color <- as.factor(edges$color)
-      edges$color[gray_out] <- "fff" # FIXME: Throws a weird error "invalid factor level, NA generated"
+      gray_out=intersect(which(edges$from%in%setdiff(edges$from,rowIDs[indx])),which(edges$to%in%setdiff(edges$to,rowIDs[indx])))
+      edges$color[gray_out] <- "fff"
       edges$width <- 5    # edge shadow
       edges$arrows <- "to"
       # Update network
@@ -323,14 +322,20 @@ function(input, output, session) {
       userInfo <- queryUserInfo(current)
       showModal(modalDialog(
         title= sprintf("%s (%s)", userInfo$fullName, userInfo$email),
-        renderUI({  # added na.omit on values that could be non available (we don't need to show NA to the user)
-          if (!is.na(userInfo$needs)){
-            needs <- paste("Needs:", userInfo$needs)
-          } else {
-            needs <- ""
-          }
-          HTML(sprintf("Skills: %s </br> %s </br> %s </br> %s</br>Department: %s</br>",  #TODO: Really ugly UI, fix
-                       userInfo$skills, na.omit(userInfo$skillsDetail), needs, userInfo$needsDetail, userInfo$department))
+        renderUI({
+          tagList(tags$p(tags$b("Skills: "), userInfo$skills),
+                  if (userInfo$skillsDetail != ""){
+                    tags$ul(tags$li(userInfo$skillsDetail))
+                  },
+                  if (userInfo$needs != ""){
+                    tags$p(tags$b("Needs: "), userInfo$needs)
+                  },
+                  if (userInfo$needsDetail != ""){
+                    tags$ul(tags$li(userInfo$needsDetail))
+                  },
+                  if (userInfo$department != ""){
+                    tags$p(tags$b("Department: "), userInfo$department)
+                  })
         }),
         footer = modalButton("close"),actionButton("buttonEdit","Make edits"), actionButton("buttonDelete", "Delete data")
       ))
