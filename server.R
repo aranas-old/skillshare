@@ -45,6 +45,12 @@ function(input, output, session) {
       saveData(formData())
     })
     
+    observeEvent(input$submitKey, {
+      removeModal()
+      updateSelectInput(session, "skills", selected = input$newKey)
+      updateSelectInput(session, "needs", selected = input$newKey)
+    })
+    
     observeEvent(input$submitDelete,{
       removeUser(value$current)
       removeModal()
@@ -125,9 +131,11 @@ function(input, output, session) {
     })
     
     skillsNeedsUnique <- reactive({
+      input$submitKey
       data = getBasicInfo()
-      unique(data_to_list(paste(data$skills, ", ", data$needs)))  # returns all unique keywords (needs + skills)
+      sort(unique(data_to_list(paste(data$skills, ", ", data$needs,", ","!Add your own keyword",", ",input$newKey))))  # returns all unique keywords (needs + skills)
     })
+    
     
     getColorPalette <- reactive({
        skills = unique(skillsKeywords())
@@ -169,6 +177,18 @@ function(input, output, session) {
     output$needsSelector <- renderUI({
       skills_and_needs <- skillsNeedsUnique()
       selectInput("needs", "Needs", choices = skills_and_needs, multiple = TRUE)
+    })
+    
+    #Option for User to add new keywords
+    observeEvent(c(input$skills,input$needs),{
+      if (input$skills == "!Add your own keyword" || input$needs == "!Add your own keyword"){
+      showModal(modalDialog(
+        title = "Add a new keyword!",
+        textInput("newKey", "Choose a keyword that best describes your skill/need:",""),
+        footer = tagList(modalButton("Cancel"), actionButton("submitKey", "Submit"))
+        )
+      )
+    }
     })
     
     #########################
@@ -359,8 +379,6 @@ function(input, output, session) {
         textInput("email_edited", "Email", value = userInfo$email),
         selectInput("skills_edited", "Skills", choices = skills_and_needs, selected = string_to_list(userInfo$skills), multiple = TRUE,
                     selectize = TRUE, width = NULL, size = NULL),
-        conditionalPanel(condition = "input.skills == 'Other'",
-                         textInput("new_keyword","New Keyword", value = NULL)),
         textInput("skillsDetail_edited", "(Optional) comments on skills", value = userInfo$skillsDetail),
         selectInput("needs_edited", "Needs", choices = skills_and_needs, selected = string_to_list(userInfo$needs), multiple = TRUE,
                     selectize = TRUE, width = NULL, size = NULL),
