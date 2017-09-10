@@ -17,6 +17,7 @@ css <- ".mandatory_star { color: red; }
           visibility: visible;
           content: 'An error occurred. Please contact the admin.'; }
         .navbar-header .navbar-brand {padding:0;margin:-20px 0;padding:1px}
+        .modal {overflow-y: scroll;}
        "
 
 shinyUI(
