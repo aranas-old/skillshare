@@ -83,8 +83,10 @@ shinyUI(
                      textInput("lastName", labelMandatory("Last Name"), ""),
                      textInput("email", labelMandatory("Email"), ""),
                      uiOutput("skillsSelector"),
+                     textInput("newskill","New keyword describing your skill:"),
                      textInput("skillsDetail", "Skill in detail", ""),
                      uiOutput("needsSelector"),
+                     textInput("newneed","New keyword describing your need:"),
                      textInput("needsDetail", "Need in detail", ""),
                      uiOutput("departmentSelector"),
                      actionButton("submit", "Submit"))
