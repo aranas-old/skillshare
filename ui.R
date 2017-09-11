@@ -30,7 +30,9 @@ shinyUI(
                  tags$title('Skillshare database for the IMRPS and Language in Interaction'),
                  tags$link(rel="stylesheet", type="text/css"),#href="style.css"), through css we can edit the text size/font family
                  tags$script("Shiny.addCustomMessageHandler('resetValue', function(variableName) {
-                                            Shiny.onInputChange(variableName, null);});"),
+                                            Shiny.onInputChange(variableName, null);});
+                             Shiny.addCustomMessageHandler('resetEmpty', function(variableName) {
+                                            Shiny.onInputChange(variableName, '');});"),
                  tags$style("#network{height:100vh !important;}"),
                  useShinyjs(),
                  shinyjs::inlineCSS(css)
