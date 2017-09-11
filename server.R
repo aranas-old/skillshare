@@ -11,7 +11,7 @@ library(shinyBS)
 require("RSQLite")
 
 ### Set variables #####
-fields <- c("timestamp", "firstName","lastName","email","skills","needs","needsDetail","skillsDetail","department")
+fields <- c("timestamp", "firstName","lastName","email","skills","newskill","needs","newneed","needsDetail","skillsDetail","department")
 sql_fname = "db/data.sqlite"
 # partner institutes for Language in Interaction: https://www.languageininteraction.nl/organisation/partners.html. Maybe "departments" is too specific? Should we switch to institute/university?
 # TODO: Check if the list is complete
@@ -29,6 +29,21 @@ function(input, output, session) {
     })
     
     observe({
+      input$buttonAdd
+      if ((!is.null(input$skills) & ("!Add your own keyword" %in% input$skills)) || (!is.null(input$skills_edited) & ("!Add your own keyword" %in% input$skills_edited)) ){
+        shinyjs::show("newskill")
+        shinyjs::show("newskill_edit")
+      } else {
+        shinyjs::hide("newskill")
+        shinyjs::hide("newskill_edit")}
+      if ((!is.null(input$needs) && ("!Add your own keyword" %in% input$needs)) || (!is.null(input$needs_edited) && ("!Add your own keyword" %in% input$needs_edited))){
+        shinyjs::show("newneed")
+        shinyjs::show("newneed_edit")
+      } else {
+        shinyjs::hide("newneed")
+        shinyjs::hide("newneed_edit")}
+       })
+    observe({
       # check if all mandatory fields (name, email etc) have a value
       mandatoryFilled <- vapply(c("firstName", "lastName", "skills", "email"),
                                 function(x) {
@@ -43,12 +58,6 @@ function(input, output, session) {
     observeEvent(input$submit, { # New data: when the Submit button is clicked, save the form data
       toggleModal(session, "modaladd", toggle = "close") # first close the pop-up window
       saveData(formData())
-    })
-    
-    observeEvent(input$submitKey, {
-      removeModal()
-      updateSelectInput(session, "skills", selected = input$newKey)
-      updateSelectInput(session, "needs", selected = input$newKey)
     })
     
     observeEvent(input$submitDelete,{
@@ -131,9 +140,8 @@ function(input, output, session) {
     })
     
     skillsNeedsUnique <- reactive({
-      input$submitKey
       data = getBasicInfo()
-      sort(unique(data_to_list(paste(data$skills, ", ", data$needs,", ","!Add your own keyword",", ",input$newKey))))  # returns all unique keywords (needs + skills)
+      sort(unique(data_to_list(paste(data$skills, ", ", data$needs,", ","!Add your own keyword"))))  # returns all unique keywords (needs + skills)
     })
     
     
@@ -172,25 +180,13 @@ function(input, output, session) {
     })
     output$skillsSelector <- renderUI({
       skills_and_needs <- skillsNeedsUnique()
-      selectInput("skills", tagList("Skills", span("*", class = "mandatory_star")), choices = skills_and_needs, multiple = TRUE)
+      selectInput("skills", tagList("Skills", span("*", class = "mandatory_star")), choices = skills_and_needs, multiple = TRUE, selected = NULL)
     })
     output$needsSelector <- renderUI({
       skills_and_needs <- skillsNeedsUnique()
       selectInput("needs", "Needs", choices = skills_and_needs, multiple = TRUE)
     })
-    
-    #Option for User to add new keywords
-    observeEvent(c(input$skills,input$needs),{
-      if (input$skills == "!Add your own keyword" || input$needs == "!Add your own keyword"){
-      showModal(modalDialog(
-        title = "Add a new keyword!",
-        textInput("newKey", "Choose a keyword that best describes your skill/need:",""),
-        footer = tagList(modalButton("Cancel"), actionButton("submitKey", "Submit"))
-        )
-      )
-    }
-    })
-    
+
     #########################
     ##### Network graph #####
     #########################
@@ -379,9 +375,11 @@ function(input, output, session) {
         textInput("email_edited", "Email", value = userInfo$email),
         selectInput("skills_edited", "Skills", choices = skills_and_needs, selected = string_to_list(userInfo$skills), multiple = TRUE,
                     selectize = TRUE, width = NULL, size = NULL),
+        textInput("newskill_edit","New keyword describing your skill:"),
         textInput("skillsDetail_edited", "(Optional) comments on skills", value = userInfo$skillsDetail),
         selectInput("needs_edited", "Needs", choices = skills_and_needs, selected = string_to_list(userInfo$needs), multiple = TRUE,
                     selectize = TRUE, width = NULL, size = NULL),
+        textInput("newneed_edit","New keyword describing your need:"),
         textInput("needsDetail_edited", "(Optional) comments on needs",value = userInfo$needsDetail),
         selectInput("department_edited", "Department", choices = departments, selected = department_value),
         footer = tagList(modalButton("Cancel"), actionButton("submitEdit", "Submit")))
@@ -437,8 +435,18 @@ function(input, output, session) {
       # Clean data (uppercase etc) before saving
       firstName = clean_text(data$firstName)
       lastName = clean_text(data$lastName)
-      skills = clean_list_to_string(data$skills)
-      needs = clean_list_to_string(data$needs)
+      ### take care of user specific keyword
+      if(data$newskill != ""){
+        skills = c(data$skills,data$newskill)
+        skills = skills[!is.element(skills,"!Add your own keyword")]
+        skills = clean_list_to_string(skills)
+      } else {skills = clean_list_to_string(data$skills)}
+      if(data$newneed != ""){
+        needs = c(data$needs,data$newneedl)
+        needs = needs[!is.element(needs,"!Add your own keyword")]
+        need = clean_list_to_string(needs)
+      } else {needs = clean_list_to_string(data$needs)}
+      ##
       query <- sprintf("INSERT INTO skillshare VALUES (CURRENT_TIMESTAMP, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s %s')", 
                        firstName, lastName, trimws(data$email), skills, needs, clean_text(data$needsDetail), clean_text(data$skillsDetail), 
                        clean_text(data$department), firstName, lastName)
