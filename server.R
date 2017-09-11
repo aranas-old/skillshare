@@ -158,7 +158,6 @@ function(input, output, session) {
     output$database <- DT::renderDataTable({
       #print("TABLE")
       df = getBasicInfo()
-      #df <- df[order(df$fullName),] # FIXME: This also changes the order of the row numbers :/ 
       df <- df[ , !(names(df) %in% "rowid")]  # No need to show rowid, it's for internal purposes
       names(df) <- c("Name","Skills","Needs","Department")
       DT::datatable(df, filter = 'top')
@@ -406,6 +405,8 @@ function(input, output, session) {
       data <- dbGetQuery(sql_db, "SELECT rowid, fullName, skills, needs, department FROM skillshare")
       dbDisconnect(sql_db)
       colnames(data) <- c("rowid","fullName", "skills", "needs", "department")
+      data <- data[order(data$fullName),]
+      rownames(data) <- 1:nrow(data)
       data
     }
     
