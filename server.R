@@ -57,15 +57,19 @@ function(input, output, session) {
       if ((!is.null(input$skills) & ("!Add your own keyword" %in% input$skills)) ){
         shinyjs::show("newskill")
         shinyjs::show("newskill_edit")
+        showNotification("A new field for you to enter a new keyword has been added to the form.")
       } else {
         shinyjs::hide("newskill")
-        shinyjs::hide("newskill_edit")}
+        shinyjs::hide("newskill_edit")
+      }
       if ((!is.null(input$needs) && ("!Add your own keyword" %in% input$needs))){
         shinyjs::show("newneed")
         shinyjs::show("newneed_edit")
+        showNotification("A new field for you to enter a new keyword has been added to the form.")
       } else {
         shinyjs::hide("newneed")
-        shinyjs::hide("newneed_edit")}
+        shinyjs::hide("newneed_edit")
+      }
        })
     observe({
       # check if all mandatory fields (name, email etc) have a value
