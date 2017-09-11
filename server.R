@@ -160,9 +160,9 @@ function(input, output, session) {
       df = getBasicInfo()
       #df <- df[order(df$fullName),] # FIXME: This also changes the order of the row numbers :/ 
       df <- df[ , !(names(df) %in% "rowid")]  # No need to show rowid, it's for internal purposes
-      DT::datatable(df, filter = 'top') # TODO: put search fields on top of table  # colnames = c('First Name', 'Last Name', 'Skills', 'Needs') ?
-      data=data.frame(df,Details = shinyInput(actionButton, length(df$fullName), 'details', label = "Details", onclick = 'Shiny.onInputChange(\"details_button\",  this.id)'))
-      DT::datatable(df, colnames=c("Name", "Skills", "Needs", "Department"), filter='top')
+      names(df) <- c("Name","Skills","Needs","Department")
+      DT::datatable(df, filter = 'top')
+      data=data.frame(df,Details = shinyInput(actionButton, length(df$Name), 'details', label = "Details", onclick = 'Shiny.onInputChange(\"details_button\",  this.id)'))
     },escape=FALSE)
     
     #### used in the "Add data" form ####
