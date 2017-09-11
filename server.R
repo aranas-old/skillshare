@@ -11,7 +11,7 @@ library(shinyBS)
 require("RSQLite")
 
 ### Set variables #####
-fields <- c("timestamp", "firstName","lastName","email","skills","newskill","needs","newneed","needsDetail","skillsDetail","department")
+fields <- c("timestamp", "firstName","lastName","email","skills","newskill_edit","newskill","needs","newneed","newneed_edit","needsDetail","skillsDetail","department")
 sql_fname = "db/data.sqlite"
 # partner institutes for Language in Interaction: https://www.languageininteraction.nl/organisation/partners.html. Maybe "departments" is too specific? Should we switch to institute/university?
 # TODO: Check if the list is complete
@@ -25,18 +25,42 @@ function(input, output, session) {
   observe({
     ### Add form #####
     formData <- reactive({
-      sapply(fields, function(x) input[[x]])  # Aggregate all form data
+      data = sapply(fields, function(x) input[[x]])  # Aggregate all form data
+      #if new keyword was entered concat with skills
+      if(data$newskill != ""){
+        data$skills = c(data$skills,data$newskill)
+        session$sendCustomMessage(type = "resetEmpty", message = "newskill")
+      }
+      if(data$newskill_edit != ""){
+        data$skills = c(data$skills,data$newskill_edit)
+        session$sendCustomMessage(type = "resetEmpty", message = "newskill_edit")
+      }
+      if(data$newneed != ""){
+        data$needs = c(data$needs,data$newneed)
+        session$sendCustomMessage(type = "resetEmpty", message = "newneed")
+      }
+      if(data$newneed_edit != ""){
+        data$needs = c(data$needs,data$newneed_edit)
+        session$sendCustomMessage(type = "resetEmpty", message = "newneed_edit")
+      }
+      #get rid of add your own keyword placeholder
+      data$skills = data$skills[!is.element(data$skills,"!Add your own keyword")]
+      data$needs = data$needs[!is.element(data$needs,"!Add your own keyword")]
+      #get rid of newskill/need fields
+      data = data[grep('new',names(data),invert = TRUE)]
+      data
     })
     
     observe({
       input$buttonAdd
-      if ((!is.null(input$skills) & ("!Add your own keyword" %in% input$skills)) || (!is.null(input$skills_edited) & ("!Add your own keyword" %in% input$skills_edited)) ){
+      input$buttonEdit
+      if ((!is.null(input$skills) & ("!Add your own keyword" %in% input$skills)) ){
         shinyjs::show("newskill")
         shinyjs::show("newskill_edit")
       } else {
         shinyjs::hide("newskill")
         shinyjs::hide("newskill_edit")}
-      if ((!is.null(input$needs) && ("!Add your own keyword" %in% input$needs)) || (!is.null(input$needs_edited) && ("!Add your own keyword" %in% input$needs_edited))){
+      if ((!is.null(input$needs) && ("!Add your own keyword" %in% input$needs))){
         shinyjs::show("newneed")
         shinyjs::show("newneed_edit")
       } else {
@@ -67,44 +91,11 @@ function(input, output, session) {
     
     observeEvent(input$submitEdit,{
       userInfo <- queryUserInfo(value$current)
+      data <- formData()
+      data = data[data != ""]
+      data$timestamp = 'CURRENT_TIMESTAMP'
       changes = c()
-      # @Sophie, I couldn't figure out quickly how to only keep track of the form edits so I followed this ugly approach: added suffix _edited to all form units and 
-      # compared values to the ones stored in the db. Really ugly, but not urgent to be fixed. Do you know a better solution w/o spending more than 10' on this?
-      
-      # Also, I cleaned the text before saving (trimmed spaces, uppercased first letter etc)
-      if (userInfo$firstName != input$firstName_edited){
-        changes = c(changes, sprintf("firstName = '%s'", clean_text(input$firstName_edited)))
-        fullName = input$firstName_edited
-      } 
-      if (userInfo$lastName != input$lastName_edited){
-        changes = c(changes, sprintf("lastName = '%s'", clean_text(input$lastName_edited)))
-      }
-      fullName = paste(clean_text(input$firstName_edited), " ", clean_text(input$lastName_edited))
-      if (userInfo$fullName != fullName){
-        changes = c(changes, sprintf("fullName = '%s'", fullName))
-      }
-      if (userInfo$email != input$email_edited){
-        changes = c(changes, sprintf("email = '%s'", trimws(input$email_edited)))
-      }
-      edited_skill = clean_list_to_string(input$skills_edited)
-      if (clean_list_to_string(userInfo$skills) != edited_skill){
-        changes = c(changes, sprintf("skills = '%s'", edited_skill))
-      }
-      if (userInfo$skillsDetail != input$skillsDetail_edited){
-        changes = c(changes, sprintf("skillsDetail = '%s'", clean_text(input$skillsDetail_edited)))
-      }
-      edited_need = clean_list_to_string(input$needs_edited)
-      if (clean_list_to_string(userInfo$needs) != edited_need){
-        changes = c(changes, sprintf("needs = '%s'", edited_need))
-      }
-      if (userInfo$needsDetail != input$needsDetail_edited){
-        changes = c(changes, sprintf("needsDetail = '%s'", clean_text(input$needsDetail_edited)))
-      }
-      if (userInfo$department != input$department_edited){  # this goes only through "selectInput", no need to clean text
-        changes = c(changes, sprintf("department = '%s'", input$department_edited))
-      }
-      changes = c(changes, "timestamp = CURRENT_TIMESTAMP")  # Update timestamp. Otherwise only update SQL if there are changes
-      changes = paste(changes, collapse=", ")  # Turn list of changes into a string
+      changes = paste(lapply(names(data),function(x) paste0(x," = '",clean_list_to_string(clean_text(data[[x]])),"'")),collapse=",")
       editData(changes, value$current)
       removeModal()  # close pop-up(s) when submit button is clicked #toggleModal(session, "modaledit", toggle = "close")
     })
@@ -370,18 +361,18 @@ function(input, output, session) {
       }
       showModal(modalDialog(
         title = sprintf("Edit Data for: %s", userInfo$fullName),
-        textInput("firstName_edited", "First Name", value = userInfo$firstName), 
-        textInput("lastName_edited", "Last Name", value = userInfo$lastName),
-        textInput("email_edited", "Email", value = userInfo$email),
-        selectInput("skills_edited", "Skills", choices = skills_and_needs, selected = string_to_list(userInfo$skills), multiple = TRUE,
+        textInput("firstName", "First Name", value = userInfo$firstName), 
+        textInput("lastName", "Last Name", value = userInfo$lastName),
+        textInput("email", "Email", value = userInfo$email),
+        selectInput("skills", "Skills", choices = skills_and_needs, selected = string_to_list(userInfo$skills), multiple = TRUE,
                     selectize = TRUE, width = NULL, size = NULL),
         textInput("newskill_edit","New keyword describing your skill:"),
-        textInput("skillsDetail_edited", "(Optional) comments on skills", value = userInfo$skillsDetail),
-        selectInput("needs_edited", "Needs", choices = skills_and_needs, selected = string_to_list(userInfo$needs), multiple = TRUE,
+        textInput("skillsDetail", "(Optional) comments on skills", value = userInfo$skillsDetail),
+        selectInput("needs", "Needs", choices = skills_and_needs, selected = string_to_list(userInfo$needs), multiple = TRUE,
                     selectize = TRUE, width = NULL, size = NULL),
         textInput("newneed_edit","New keyword describing your need:"),
-        textInput("needsDetail_edited", "(Optional) comments on needs",value = userInfo$needsDetail),
-        selectInput("department_edited", "Department", choices = departments, selected = department_value),
+        textInput("needsDetail", "(Optional) comments on needs",value = userInfo$needsDetail),
+        selectInput("department", "Department", choices = departments, selected = department_value),
         footer = tagList(modalButton("Cancel"), actionButton("submitEdit", "Submit")))
       )
     })
@@ -435,18 +426,8 @@ function(input, output, session) {
       # Clean data (uppercase etc) before saving
       firstName = clean_text(data$firstName)
       lastName = clean_text(data$lastName)
-      ### take care of user specific keyword
-      if(data$newskill != ""){
-        skills = c(data$skills,data$newskill)
-        skills = skills[!is.element(skills,"!Add your own keyword")]
-        skills = clean_list_to_string(skills)
-      } else {skills = clean_list_to_string(data$skills)}
-      if(data$newneed != ""){
-        needs = c(data$needs,data$newneedl)
-        needs = needs[!is.element(needs,"!Add your own keyword")]
-        need = clean_list_to_string(needs)
-      } else {needs = clean_list_to_string(data$needs)}
-      ##
+      skills = clean_list_to_string(data$skills)
+      needs = clean_list_to_string(data$needs)
       query <- sprintf("INSERT INTO skillshare VALUES (CURRENT_TIMESTAMP, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s %s')", 
                        firstName, lastName, trimws(data$email), skills, needs, clean_text(data$needsDetail), clean_text(data$skillsDetail), 
                        clean_text(data$department), firstName, lastName)
