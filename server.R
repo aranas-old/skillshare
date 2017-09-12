@@ -165,7 +165,7 @@ function(input, output, session) {
       df <- df[ , !(names(df) %in% "rowid")]  # No need to show rowid, it's for internal purposes
       names(df) <- c("Name","Skills","Needs","Department")
       DT::datatable(df, filter = 'top')
-      data=data.frame(df,Details = shinyInput(actionButton, length(df$Name), 'details', label = "Details", onclick = 'Shiny.onInputChange(\"details_button\",  this.id)'))
+      data=data.frame(df,Details = shinyInput(actionButton, length(df$Name), 'details', label = "Details / Edit", onclick = 'Shiny.onInputChange(\"details_button\",  this.id)'))
     },escape=FALSE)
     
     #### used in the "Add data" form ####
