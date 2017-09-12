@@ -34,21 +34,31 @@ css <- ".mandatory_star { color: red; }
        "
 
 shinyUI(fluidPage(
-    titlePanel(title=div(class=".navbar-header .navbar-brand", img(src="images/combined_logos.png", height= 50))), #margin:-20px is an ugly solution but it works for now :S
+        useShinyjs(),
+        shinyjs::inlineCSS(css),
+        titlePanel(title=div(img(src="images/combined_logos.png", height= 90))),
+        tagList(
+          tags$link(rel="stylesheet",type="text/css"),#href="style.css"),
+          tags$script("Shiny.addCustomMessageHandler('resetValue', function(variableName) {
+                                            Shiny.onInputChange(variableName, null);});
+                             Shiny.addCustomMessageHandler('resetEmpty', function(variableName) {
+                                            Shiny.onInputChange(variableName, '');});"),
+          tags$style("#network{height:100vh !important;}")
+        ),
     fluidRow(
       column(6,
              fluidRow(
-             column(6,bsCollapse(id = "collapsehowto", open = "NULL",
+             column(12,bsCollapse(id = "collapsehowto", open = "NULL",
                         bsCollapsePanel("How to",
-                                        div('This database is meant to efficiently connect doctoral students by linking the ones who need help to the ones who can offer help - both in work as well as leisure.
-                                                   
-                                                   You can explore our database by interacting with both the network graph or the table. Just click on a circle to learn more about that persons skills & needs! Or explore who???s is helping out by hovering over the arrows!
-                                                   
-                                                   Would you like to join? Simply add your data and be part of our network!
-                                                   
-                                                   ')
-                        ))),
-             column(6,bsCollapse(id = "collapsejoin", open = "NULL",
+                                        tags$div(
+                                            tags$p('You can explore this database by interacting with both the network graph below or the table to the right.'),
+                                            tags$ul(
+                                              tags$li('Click on a Node in the network to learn more about a person or use the details button in the table.'),
+                                              tags$li('Hover over the arrows to explore how people help each other.'),
+                                              tags$li('To add your data click on Join us!'),
+                                              tags$li('To edit your data, go to the detailed view and then click on Edit.'))
+                        )))),
+             column(12,bsCollapse(id = "collapsejoin", open = "NULL",
                                  bsCollapsePanel("Join us!",
                                                  tags$div(
                                                  tags$h4('Thank you for joining the network!'),
@@ -56,7 +66,7 @@ shinyUI(fluidPage(
                                                  tags$p("Please also make sure to fill in some of your own needs. It may be that people do not even know they posses a skill that could be helpful to others.")
                                                 ),
                                                 actionButton("buttonAdd", "Add your Data"),
-                                                bsModal("modaladd", "Add data", "buttonAdd", size = "small",
+                                                bsModal("modaladd", "Add data", "buttonAdd",
                                                          HTML("Please fill in this form and press submit"),
                                                          textInput("firstName", labelMandatory("First Name"), ""),
                                                          textInput("lastName", labelMandatory("Last Name"), ""),
@@ -81,7 +91,12 @@ shinyUI(fluidPage(
                                                      tags$p("You can explore our database by interacting with both the network graph or the table. Just click on a circle to learn more about that person's skills & needs! Or explore who is is helping out by hovering over the arrows!"),
                                                      tags$p("Would you like to join? Simply add your data and be part of our network!"),
                                                      tags$p("For Questions concerning the Database please contact skillshare@email.com"),
-                                                     tags$p("Credits...")))))),
+                                                     tags$p("Credits...")),
+                                                  actionButton("buttonStats", "See statistics"),
+                                                  bsModal("modalstats", "Statistics", "buttonStats",
+                                                          splitLayout(plotlyOutput("piePlotSkills"), plotlyOutput("piePlotNeeds")))
+                                                        )
+                                                  ))),
              DT::dataTableOutput("database"), tags$hr())
     )
  )
