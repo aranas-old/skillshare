@@ -31,17 +31,21 @@ function(input, output, session) {
         data$skills = c(data$skills,data$newskill)
         session$sendCustomMessage(type = "resetEmpty", message = "newskill")
       }
-      if(data$newskill_edit != ""){
+      if(!is.null(data$newskill_edit)){
+        if(data$newskill_edit != ""){
         data$skills = c(data$skills,data$newskill_edit)
         session$sendCustomMessage(type = "resetEmpty", message = "newskill_edit")
+        }
       }
       if(data$newneed != ""){
         data$needs = c(data$needs,data$newneed)
         session$sendCustomMessage(type = "resetEmpty", message = "newneed")
       }
-      if(data$newneed_edit != ""){
+      if(!is.null(data$newneed_edit)){
+        if(data$newneed_edit != ""){
         data$needs = c(data$needs,data$newneed_edit)
         session$sendCustomMessage(type = "resetEmpty", message = "newneed_edit")
+        }
       }
       #get rid of add your own keyword placeholder
       data$skills = data$skills[!is.element(data$skills,"!Add your own keyword")]
