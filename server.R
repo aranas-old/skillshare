@@ -163,7 +163,8 @@ function(input, output, session) {
       #print("TABLE")
       df = getBasicInfo()
       df <- df[ , !(names(df) %in% "rowid")]  # No need to show rowid, it's for internal purposes
-      names(df) <- c("Name","Skills","Needs","Department")
+      df <- df[ , !(names(df) %in% "department")]
+      names(df) <- c("Name","Skills","Needs")
       DT::datatable(df, filter = 'top')
       data=data.frame(df,Details = shinyInput(actionButton, length(df$Name), 'details', label = "Details / Edit", onclick = 'Shiny.onInputChange(\"details_button\",  this.id)'))
     },escape=FALSE)
