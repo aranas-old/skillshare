@@ -36,7 +36,7 @@ css <- ".mandatory_star { color: red; }
 shinyUI(fluidPage(
         useShinyjs(),
         shinyjs::inlineCSS(css),
-        titlePanel(title=div(img(src="images/combined_logos.png", height= 90))),
+        titlePanel(title=div(img(src="images/combined_logos.png", height=60))),
         tagList(
           tags$link(rel="stylesheet",type="text/css"),#href="style.css"),
           tags$script("Shiny.addCustomMessageHandler('resetValue', function(variableName) {
@@ -48,7 +48,7 @@ shinyUI(fluidPage(
     fluidRow(
       column(6,
              fluidRow(
-             column(12,bsCollapse(id = "collapsehowto", open = "NULL",
+             column(6,bsCollapse(id = "collapsehowto", open = "NULL",
                         bsCollapsePanel("How to",
                                         tags$div(
                                             tags$p('You can explore this database by interacting with both the network graph below or the table to the right.'),
@@ -58,7 +58,7 @@ shinyUI(fluidPage(
                                               tags$li('To add your data click on Join us!'),
                                               tags$li('To edit your data, go to the detailed view and then click on Edit.'))
                         )))),
-             column(12,bsCollapse(id = "collapsejoin", open = "NULL",
+             column(6,bsCollapse(id = "collapsejoin", open = "NULL",
                                  bsCollapsePanel("Join us!",
                                                  tags$div(
                                                  tags$h4('Thank you for joining the network!'),
