@@ -97,7 +97,10 @@ shinyUI(fluidPage(
                                                           splitLayout(plotlyOutput("piePlotSkills"), plotlyOutput("piePlotNeeds")))
                                                         )
                                                   ))),
-             DT::dataTableOutput("database"), tags$hr())
+             DT::dataTableOutput("database"), tags$hr()),
+              conditionalPanel(condition="$('html').hasClass('shiny-busy')",
+                       tags$div("Loading...",id="loadmessage")
+      )
     )
  )
 )
