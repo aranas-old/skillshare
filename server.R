@@ -57,15 +57,19 @@ function(input, output, session) {
       if ((!is.null(input$skills) & ("!Add your own keyword" %in% input$skills)) ){
         shinyjs::show("newskill")
         shinyjs::show("newskill_edit")
+        showNotification("A new field for you to enter a new keyword has been added to the form.")
       } else {
         shinyjs::hide("newskill")
-        shinyjs::hide("newskill_edit")}
+        shinyjs::hide("newskill_edit")
+      }
       if ((!is.null(input$needs) && ("!Add your own keyword" %in% input$needs))){
         shinyjs::show("newneed")
         shinyjs::show("newneed_edit")
+        showNotification("A new field for you to enter a new keyword has been added to the form.")
       } else {
         shinyjs::hide("newneed")
-        shinyjs::hide("newneed_edit")}
+        shinyjs::hide("newneed_edit")
+      }
        })
     observe({
       # check if all mandatory fields (name, email etc) have a value
@@ -161,7 +165,7 @@ function(input, output, session) {
       df <- df[ , !(names(df) %in% "rowid")]  # No need to show rowid, it's for internal purposes
       names(df) <- c("Name","Skills","Needs","Department")
       DT::datatable(df, filter = 'top')
-      data=data.frame(df,Details = shinyInput(actionButton, length(df$Name), 'details', label = "Details", onclick = 'Shiny.onInputChange(\"details_button\",  this.id)'))
+      data=data.frame(df,Details = shinyInput(actionButton, length(df$Name), 'details', label = "Details / Edit", onclick = 'Shiny.onInputChange(\"details_button\",  this.id)'))
     },escape=FALSE)
     
     #### used in the "Add data" form ####
