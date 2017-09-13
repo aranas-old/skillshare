@@ -162,16 +162,25 @@ function(input, output, session) {
       data_to_list(data$needs)
     })
     
-    # Select relevant information to visualize in table
-    output$database <- DT::renderDataTable({
-      #print("TABLE")
+    tableInfo <- reactive({
       df = getBasicInfo()
-      df <- df[ , !(names(df) %in% "rowid")]  # No need to show rowid, it's for internal purposes
+      df <- df[ , !(names(df) %in% "rowid")] # No need to show rowid, it's for internal purposes
       df <- df[ , !(names(df) %in% "department")]
       names(df) <- c("Name","Skills","Needs")
-      DT::datatable(df, filter = 'top')
-      data=data.frame(df,Details = shinyInput(actionButton, length(df$Name), 'details', label = "Details / Edit", onclick = 'Shiny.onInputChange(\"details_button\",  this.id)'))
-    },escape=FALSE)
+      #df$Skills <- as.factor(df$Skills) # disabled at the moment because does not recognize comma-separated keywords
+      #df$Needs <- as.factor(df$Needs)
+      data = data.frame(df, Details = shinyInput(actionButton, length(df$Name), 'details', label = "Details / Edit", onclick = 'Shiny.onInputChange(\"details_button\",  this.id)'))
+      })
+    
+    # Select relevant information to visualize in table
+    output$database <- DT::renderDataTable({
+      tableInfo()
+      },escape=FALSE,
+        filter = 'top',
+        options = list(pagelength = 10,
+        columnDefs = list(list(
+        targets = c(1,4), searchable = FALSE)
+      )))
     
     #### used in the "Add data" form ####
     output$departmentSelector <- renderUI({
