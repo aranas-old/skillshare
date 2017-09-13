@@ -97,6 +97,9 @@ shinyUI(fluidPage(
                                                           splitLayout(plotlyOutput("piePlotSkills"), plotlyOutput("piePlotNeeds")))
                                                         )
                                                   ))),
+             tags$head(tags$style(
+               HTML("input[type='search']:disabled {visibility:hidden}")
+             )),
              DT::dataTableOutput("database"), tags$hr()),
               conditionalPanel(condition="$('html').hasClass('shiny-busy')",
                        tags$div("Loading...",id="loadmessage")
