@@ -127,11 +127,11 @@ function(input, output, session) {
       input$submit
       input$submitEdit
       input$submitDelete
-      queryBasicData()  # query DB to get fullName, skills, needs and department
+      queryBasicData()  # query DB to get fullName, skills & needs
     })
     
     getRowIDs <- reactive({
-      data = getBasicInfo()  # query DB to get fullName, skills, needs and department
+      data = getBasicInfo()  # query DB to get fullName, skills & needs
       data$rowid
     })
     
@@ -161,7 +161,7 @@ function(input, output, session) {
     
     tableInfo <- reactive({
       df = getBasicInfo()
-      df <- df[ , !(names(df) %in% c("rowid", "department"))] # No need to show rowid, it's for internal purposes
+      df <- df[ , !(names(df) %in% "rowid")] # No need to show rowid, it's for internal purposes
       names(df) <- c("Name","Skills","Needs")
       #df$Skills <- as.factor(df$Skills) # disabled at the moment because does not recognize comma-separated keywords
       #df$Needs <- as.factor(df$Needs)
@@ -173,14 +173,12 @@ function(input, output, session) {
       tableInfo()
       },escape=FALSE,
         filter = 'top',
-        options = list(pagelength = 10,
-        columnDefs = list(list(
-        targets = c(1,4), searchable = FALSE)
-      )))
+        options = list(pagelength = 10, columnDefs = list(list(targets = c(1,4), searchable = FALSE)))
+    )
     
     #### used in the "Add data" form ####
     output$departmentSelector <- renderUI({
-      selectInput("department", "Department", choices=departments)
+      selectInput("department", "Department", choices = departments)
     })
     output$skillsSelector <- renderUI({
       skills_and_needs <- skillsNeedsUnique()
@@ -218,7 +216,6 @@ function(input, output, session) {
                                          fullName = data$fullName[row],
                                          skills = data$skills[row],
                                          needs = data$needs[row],
-                                         department = data$department[row],
                                          connection_size = node_connection_size))
       }
       #edges <- edges[order(edges$title),]
@@ -337,8 +334,8 @@ function(input, output, session) {
       if (!is.null(input$current_node_id)) {  # when user clicks on network nodes
         current = input$current_node_id
       } else {  # when user clicks on table "Details" button
-        data = getBasicInfo()
-        current = data$rowid[as.numeric(input$details_button)]  # need to update id according to data rowid. as.numeric is compulsory otherwise is returns NA
+        rowID = getRowIDs()
+        current = rowID[as.numeric(input$details_button)]  # need to update id according to data rowid. as.numeric is compulsory otherwise is returns NA
       }
       userInfo <- queryUserInfo(current)
       showModal(modalDialog(
@@ -417,9 +414,9 @@ function(input, output, session) {
     
     queryBasicData <- function() {
       sql_db <- dbConnect(SQLite(), sql_fname)
-      data <- dbGetQuery(sql_db, "SELECT rowid, fullName, skills, needs, department FROM skillshare")
+      data <- dbGetQuery(sql_db, "SELECT rowid, fullName, skills, needs FROM skillshare")
       dbDisconnect(sql_db)
-      colnames(data) <- c("rowid","fullName", "skills", "needs", "department")
+      colnames(data) <- c("rowid","fullName", "skills", "needs")
       data <- data[order(data$fullName),]
       rownames(data) <- 1:nrow(data)
       data
