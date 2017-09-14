@@ -17,9 +17,10 @@ sql_fname = "db/data.sqlite"
 # TODO: Check if the list is complete
 departments <- c("Centre for Language Studies (CLS), Radboud University", "Centre for Language and Speech Technology (CLST), Radboud University", "Donders Centre for Cognition (DCC), Donders", "Institute for Logic, Language and Computation (ILLC), University of Amsterdam", "Neurobiology of Language (NB), MPI", "Language and Cognition (LC), MPI", "Language and Genetics (GEN), MPI", "Language Development, MPI", "Psychology of Language (POL), MPI", "Neurogenetics of Vocal Communication Group, MPI", "RadboudUMC", "UMC Utrecht", "Maastricht University", "Tilburg University", "Universitetit Leiden")
 departments <- departments[order(departments)]  # sort alphabetically
-# Create color palette: get all available colors (max is 60 I think)
+# Create color palette: get all available colors (total: 150 --151 including white)
 col_palts = brewer.pal.info[brewer.pal.info$category != 'seq',]  # Options: div, seq, qual. Get all but sequential ones. 
-color_vector = unlist(mapply(brewer.pal, col_palts$maxcolors, rownames(col_palts)))
+color_vector = unique(unlist(mapply(brewer.pal, col_palts$maxcolors, rownames(col_palts))))
+color_vector = color_vector[color_vector != '#FFFFFF']  # remove white
 
 function(input, output, session) {
   observe({
@@ -28,24 +29,20 @@ function(input, output, session) {
       data = sapply(fields, function(x) input[[x]])  # Aggregate all form data
       #if new keyword was entered concat with skills
       if(data$newskill != ""){
-        data$skills = c(data$skills,data$newskill)
+        data$skills = c(data$skills,string_to_list(data$newskill))
         session$sendCustomMessage(type = "resetEmpty", message = "newskill")
       }
-      if(!is.null(data$newskill_edit)){
-        if(data$newskill_edit != ""){
-        data$skills = c(data$skills,data$newskill_edit)
+      if(!is.null(data$newskill_edit) && data$newskill_edit != ""){
+        data$skills = c(data$skills,string_to_list(data$newskill_edit))
         session$sendCustomMessage(type = "resetEmpty", message = "newskill_edit")
-        }
       }
       if(data$newneed != ""){
-        data$needs = c(data$needs,data$newneed)
+        data$needs = c(data$needs,string_to_list(data$newneed))
         session$sendCustomMessage(type = "resetEmpty", message = "newneed")
       }
-      if(!is.null(data$newneed_edit)){
-        if(data$newneed_edit != ""){
-        data$needs = c(data$needs,data$newneed_edit)
+      if(!is.null(data$newneed_edit) && data$newneed_edit != ""){
+        data$needs = c(data$needs,string_to_list(data$newneed_edit))
         session$sendCustomMessage(type = "resetEmpty", message = "newneed_edit")
-        }
       }
       #get rid of add your own keyword placeholder
       data$skills = data$skills[!is.element(data$skills,"!Add your own keyword")]
@@ -164,8 +161,7 @@ function(input, output, session) {
     
     tableInfo <- reactive({
       df = getBasicInfo()
-      df <- df[ , !(names(df) %in% "rowid")] # No need to show rowid, it's for internal purposes
-      df <- df[ , !(names(df) %in% "department")]
+      df <- df[ , !(names(df) %in% c("rowid", "department"))] # No need to show rowid, it's for internal purposes
       names(df) <- c("Name","Skills","Needs")
       #df$Skills <- as.factor(df$Skills) # disabled at the moment because does not recognize comma-separated keywords
       #df$Needs <- as.factor(df$Needs)
@@ -199,7 +195,6 @@ function(input, output, session) {
     ##### Network graph #####
     #########################
     node_pairs <- reactive({
-      #print("GRAPH")
       # set content of graph (nodes & edges). Find pairs of people where skills match needs
       edges <- data.frame()
       nodes <- data.frame()
@@ -245,7 +240,7 @@ function(input, output, session) {
       nodes$color.background <- "#4bd8c1"
       nodes$color.border <- "#42b2a0"
       nodes$color.highlight.background <- "#4bd8c1"
-      nodes$color.highlight.border <- "#006600"  #changed it to dark green instead of "red" because it looked like an error IMO. What do you think? :)
+      nodes$color.highlight.border <- "#006600"
       #set edges parameters
       edges$arrows <- "to" # arrows: 'from', 'to', or 'middle'
       edges$smooth <- FALSE    # should the edges be curved?   -- Chara: I actually like the curved edges and the bouncing effect on loading so I vote for TRUE
@@ -277,6 +272,8 @@ function(input, output, session) {
       edges <- graphinfo$edges
       skills = unique(skillsKeywords())
       colors = data.frame(skills = skills, colors = c(color = getColorPalette()), stringsAsFactors=FALSE)
+      #print(colors$colors)
+      #print(colors$skills)
       #change color
       nodes$color.background <- "fff"
       nodes$color.border <- "#d3d3d3"
