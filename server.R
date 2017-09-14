@@ -173,7 +173,7 @@ function(input, output, session) {
       tableInfo()
       },escape=FALSE,
         filter = 'top',
-        options = list(pagelength = 10, columnDefs = list(list(targets = c(1,4), searchable = FALSE)))
+        options = list(pagelength = 10, columnDefs = list(list(targets = c(4), searchable = FALSE)))
     )
     
     #### used in the "Add data" form ####
