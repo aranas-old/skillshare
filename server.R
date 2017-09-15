@@ -27,6 +27,17 @@ function(input, output, session) {
     ### Add form #####
     formData <- reactive({
       data = sapply(fields, function(x) input[[x]])  # Aggregate all form data
+      
+      # check for double entries
+      if(input$lastName %in% data$lastName){
+        #display error message
+        showModal(modalDialog(
+          title = "There was a problem with your entry",
+          sprintf("The database already contains an entry for the last name you entered: %s ", input$lastName, "."),
+          "To adapt your entry, select your name in the datatable and click on 'Details / Edit'.",
+          footer = modalButton("Ok")))
+      }
+        
       #if new keyword was entered concat with skills
       if(data$newskill != ""){
         data$skills = c(data$skills,string_to_list(data$newskill))
