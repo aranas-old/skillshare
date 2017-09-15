@@ -15,7 +15,7 @@ css <- ".mandatory_star { color: red; }
         .shiny-output-error { visibility: hidden; }
         .shiny-output-error:before {
           visibility: visible;
-          content: 'An error occurred. Please contact the admin.'; }
+          content: 'An error occurred. Please contact one of the admins (see 'About' section for their emails).'; }
         .navbar-header .navbar-brand {padding:0;margin:-20px 0;padding:1px}
         .modal {overflow-y: scroll;}
         .loadmessage {
