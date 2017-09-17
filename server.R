@@ -96,9 +96,15 @@ function(input, output, session) {
           sprintf("The database already contains an entry for the last name you entered: %s ", completeName , "."),
           "To adapt your entry, select your name in the datatable and click on 'Details / Edit'.",
           footer = modalButton("Ok")))
-      } else{saveData(formData())}
-
-    })
+      } else{
+        saveData(formData())
+        updateTextInput(session, "firstName", value = "")
+        updateTextInput(session, "lastName", value = "")
+        updateTextInput(session, "email", value = "")
+        updateTextInput(session, "skillsDetail", value = "")
+        updateTextInput(session, "needsDetail", value = "")
+    }})
+      
     
     observeEvent(input$submitDelete,{
       removeUser(value$current)
