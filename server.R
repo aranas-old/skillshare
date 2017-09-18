@@ -93,9 +93,14 @@ function(input, output, session) {
         #display error message
         showModal(modalDialog(
           title = "There was a problem with your entry",
-          sprintf("The database already contains an entry for the last name you entered: %s ", completeName , "."),
+          sprintf("The database already contains an entry for the name you entered: %s ", completeName , "."),
           "To adapt your entry, select your name in the datatable and click on 'Details / Edit'.",
           footer = modalButton("Ok")))
+        updateTextInput(session, "firstName", value = "")
+        updateTextInput(session, "lastName", value = "")
+        updateTextInput(session, "email", value = "")
+        updateTextInput(session, "skillsDetail", value = "")
+        updateTextInput(session, "needsDetail", value = "")
       } else{
         saveData(formData())
         updateTextInput(session, "firstName", value = "")
