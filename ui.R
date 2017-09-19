@@ -49,8 +49,7 @@ shinyUI(fluidPage(
                                             tags$ul(
                                               tags$li('Click on a Node in the network to learn more about a person or use the details button in the table.'),
                                               tags$li('Hover over the arrows to explore how people help each other.'),
-                                              tags$li('To add your data click here:'),
-                                              actionButton("buttonAdd", "Add your Data"),
+                                              tags$li('To add your data click on "Join us!".'),
                                               tags$li('To edit your data, go to the detailed view and click on "Edit".'))
                         )))),
              column(6,bsCollapse(id = "collapsejoin", open = "NULL",
@@ -68,14 +67,16 @@ shinyUI(fluidPage(
                column(12,bsCollapse(id = "collapseabout", open = "NULL",
                                    bsCollapsePanel("About",
                                                    tags$div(
-                                                     tags$h4("Hi, welcome to our little database of skills!"),
-                                                     tags$p("Have you ever needed help during your PhD but were not sure who to ask? Do you miss teamwork as a lone science warrior? Do you want to connect with your peers outside work? With 25 doctoral students in the Language in Interaction (LiI) consortium and 76 in the International Max Planck Research School (IMPRS, cohorts 2014-2017) there is an immense amount of talent & interests surrounding us! This database is meant to efficiently connect doctoral students by linking the ones who need help to the ones who can offer help - both in work as well as leisure."),
-                                                     tags$p("You can explore our database by interacting with both the network graph or the table. Just click on a circle to learn more about that person's skills & needs! Or explore who is is helping out by hovering over the arrows!"),
-                                                     tags$p("Would you like to join? Simply add your data and be part of our network!"),
-                                                     tags$p("For Questions concerning the Database please contact one of the authors:"),
-                                                     tags$p("Sophie Arana: s.arana@donders.ru.nl"),
-                                                     tags$p("Chara Tsoukala: c.tsoukala@let.ru.nl"),
-                                                     tags$p("Anne Mickan: a.mickan@donders.ru.nl")),
+                                                       tags$h4("Hi, welcome to our little database of skills!"),
+                                                       tags$p("Have you ever needed help during your PhD but were not sure who to ask? Do you miss teamwork as a lone science warrior? Do you want to connect with your peers outside work? With 25 doctoral students in the Language in Interaction (LiI) consortium and 76 in the International Max Planck Research School (IMPRS, cohorts 2014-2017) there is an immense amount of talent & interests surrounding us! This database is meant to efficiently connect doctoral students by linking the ones who need help to the ones who can offer help - both in work as well as leisure."),
+                                                       tags$p("You can explore our database by interacting with both the network graph or the table. Just click on a circle to learn more about that person's skills & needs! Or explore who is is helping out by hovering over the arrows!"),
+                                                       tags$p("Would you like to join? Simply add your data and be part of our network!"),
+                                                       tags$p("For questions concerning the database please contact one of the admins:"),
+                                                       tags$ul(
+                                                         tags$li('Sophie Arana: s.arana@donders.ru.nl'),
+                                                         tags$li('Chara Tsoukala: c.tsoukala@let.ru.nl'),
+                                                         tags$li('Anne Mickan: a.mickan@donders.ru.nl'))
+                                                     ),
                                                   actionButton("buttonStats", "See statistics"),
                                                   bsModal("modalstats", "Statistics", "buttonStats",
                                                           splitLayout(plotlyOutput("piePlotSkills"), plotlyOutput("piePlotNeeds")))
