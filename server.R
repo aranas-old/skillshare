@@ -11,13 +11,19 @@ library(shinyBS)
 require("RSQLite")
 
 ### Set variables #####
-fields <- c("timestamp", "name","email","skills", "skillsDetail", "newskill_edit","newskill","needs","needsDetail","newneed","newneed_edit",
-            "cohort", "affiliation", "location")
+fields <- c("timestamp", "name","email","skills", "skillsDetail","newskill","needs","needsDetail","newneed","cohort", "affiliation", "location")
 sql_fname = "db/data.sqlite"
 # Create color palette: get all available colors (total: 150 --151 including white)
 col_palts = brewer.pal.info[brewer.pal.info$category != 'seq',]  # Options: div, seq, qual. Get all but sequential ones. 
 color_vector = unique(unlist(mapply(brewer.pal, col_palts$maxcolors, rownames(col_palts))))
 color_vector = color_vector[color_vector != '#FFFFFF']  # remove white
+
+labelMandatory <- function(label) {
+  tagList(
+    label,
+    span("*", class = "mandatory_star")
+  )
+}
 
 function(input, output, session) {
   clear_form <- function(){
@@ -31,23 +37,14 @@ function(input, output, session) {
     ### Add form #####
     formData <- reactive({
       data = sapply(fields, function(x) input[[x]])  # Aggregate all form data
-      print(data)
       #if new keyword was entered concat with skills
       if(data$newskill != ""){
         data$skills = c(data$skills,string_to_list(data$newskill))
         session$sendCustomMessage(type = "resetEmpty", message = "newskill")
       }
-      if(!is.null(data$newskill_edit) && data$newskill_edit != ""){
-        data$skills = c(data$skills,string_to_list(data$newskill_edit))
-        session$sendCustomMessage(type = "resetEmpty", message = "newskill_edit")
-      }
       if(data$newneed != ""){
         data$needs = c(data$needs,string_to_list(data$newneed))
         session$sendCustomMessage(type = "resetEmpty", message = "newneed")
-      }
-      if(!is.null(data$newneed_edit) && data$newneed_edit != ""){
-        data$needs = c(data$needs,string_to_list(data$newneed_edit))
-        session$sendCustomMessage(type = "resetEmpty", message = "newneed_edit")
       }
       #get rid of add your own keyword placeholder
       data$skills = data$skills[!is.element(data$skills,"!Add your own keyword")]
@@ -62,21 +59,18 @@ function(input, output, session) {
       input$buttonEdit
       if ((!is.null(input$skills) & ("!Add your own keyword" %in% input$skills)) ){
         shinyjs::show("newskill")
-        shinyjs::show("newskill_edit")
         showNotification("A new field for you to enter a new keyword has been added to the form.")
       } else {
         shinyjs::hide("newskill")
-        shinyjs::hide("newskill_edit")
       }
       if ((!is.null(input$needs) && ("!Add your own keyword" %in% input$needs))){
         shinyjs::show("newneed")
-        shinyjs::show("newneed_edit")
         showNotification("A new field for you to enter a new keyword has been added to the form.")
       } else {
         shinyjs::hide("newneed")
-        shinyjs::hide("newneed_edit")
       }
-       })
+    })
+    
     observe({
       # check if all mandatory fields (name, email etc) have a value
       mandatoryFilled <- vapply(c("name", "skills", "email"),
@@ -90,14 +84,13 @@ function(input, output, session) {
     })
     
     observeEvent(input$submit, { # New data: when the Submit button is clicked, save the form data
-      toggleModal(session, "modaladd", toggle = "close") # first close the pop-up window
-      dataold = loadData()
-      if(input$name %in% dataold$name){
-        #display error message
+      removeModal() # first close the pop-up window
+      if(userExists(input$name, input$email)){ # display error message if name&email exist in db
         showModal(modalDialog(
           title = "There was a problem with your entry",
-          sprintf("The database already contains an entry for the name you entered: %s ", input$name , "."),
-          "To adapt your entry, select your name in the datatable and click on 'Details / Edit'.",
+          tags$p("The database already contains an entry for the name you entered:"),
+          tags$p(tags$b(sprintf("%s (%s)", input$name, input$email))),
+          tags$p("To adapt your entry, select your name in the datatable and click on 'Details / Edit'."),
           footer = modalButton("Ok")))
       } else{
         saveData(formData())
@@ -127,7 +120,7 @@ function(input, output, session) {
       substr(x, 1, 1) <- toupper(substr(x, 1, 1))
       x
     }
-    remove_empty <- function(x){x[x != ""]}
+    remove_empty <- function(x){if (!is.null(x)) { x[x != ""] } else x }
     data_to_list <- function(x){remove_empty(trimws(unlist(strsplit(x, ","))))}
     string_to_list <- function(x){remove_empty(trimws(unlist(strsplit(x, ","))))}
     # check the vailidity of the e-mail format:
@@ -372,27 +365,46 @@ function(input, output, session) {
     })
     
     observeEvent(input$buttonEdit, {
-      skills_and_needs <- skillsNeedsUnique()
       userInfo <- queryUserInfo(value$current)
-      showModal(modalDialog(
-        title = sprintf("Edit Data for: %s", userInfo$name),
-        textInput("name", "Name", value = userInfo$name), 
-        #textInput("lastName", "Last Name", value = userInfo$lastName),
-        textInput("email", "Email", value = userInfo$email),
-        selectInput("skills", "Skills", choices = skills_and_needs, selected = string_to_list(userInfo$skills), multiple = TRUE,
-                    selectize = TRUE, width = NULL, size = NULL),
-        textInput("newskill_edit","New keyword describing your skill:"),
-        textInput("skillsDetail", "(Optional) comments on skills", value = userInfo$skillsDetail),
-        selectInput("needs", "Needs", choices = skills_and_needs, selected = string_to_list(userInfo$needs), multiple = TRUE,
-                    selectize = TRUE, width = NULL, size = NULL),
-        textInput("newneed_edit","New keyword describing your need:"),
-        textInput("needsDetail", "(Optional) comments on needs",value = userInfo$needsDetail),
-        selectInput("cohort", "Cohort", choices=c(2014:2017), selected=userInfo$cohort),
-        selectInput("affiliation", "(Primary) affiliation", choices=c("LiI", "IMPRS"), selected=userInfo$affiliation),
-        selectInput("location", "Location", choices=c("Amsterdam", "Leiden", "Maastricht", "Nijmegen", "Tilburg", "Utrecht"), selected=userInfo$location),
-        footer = tagList(modalButton("Cancel"), actionButton("submitEdit", "Submit")))
-      )
+      title = sprintf("Edit Data for: %s", userInfo$name)
+      actionButtonName = "submitEdit"
+      dataForm(title, actionButtonName, userInfo)
     })
+
+    observeEvent(input$buttonAdd, {
+      title = "Add your data"
+      actionButtonName = "submit"
+      userInfo = data.frame(name = "", email = "", skills = "", skillsDetail = "", needs="", needsDetail="", cohort=2017, affiliation="IMPRS", location="Nijmegen")
+      dataForm(title, actionButtonName, userInfo)
+    })
+    
+    dataForm <- function(title, actionButtonName, userInfo){
+        skills_and_needs <- skillsNeedsUnique()
+        if (userInfo$skills == "") {
+          selected_skills = NULL
+          selected_needs = NULL
+        } else {
+          selected_skills = string_to_list(userInfo$skills)
+          selected_needs = string_to_list(userInfo$needs)
+        }
+        showModal(modalDialog(
+          title = title,
+          textInput("name", labelMandatory("Name"), value = userInfo$name), 
+          textInput("email", labelMandatory("Email"), value = userInfo$email),
+          selectInput("skills", labelMandatory("Skills"), choices = skills_and_needs, selected = selected_skills, multiple = TRUE,
+                       selectize = TRUE, width = NULL, size = NULL),
+          textInput("newskill","New keyword describing your skill:"),
+          textInput("skillsDetail", "(Optional) comments on skills", value = userInfo$skillsDetail),
+          selectInput("needs", "Needs", choices = skills_and_needs, selected = selected_needs, multiple = TRUE,
+                       selectize = TRUE, width = NULL, size = NULL),
+          textInput("newneed","New keyword describing your need:"),
+          textInput("needsDetail", "(Optional) comments on needs",value = userInfo$needsDetail),
+          selectInput("cohort", "Cohort", choices=c(2014:2017), selected=userInfo$cohort),
+          selectInput("affiliation", "(Primary) affiliation", choices=c("LiI", "IMPRS"), selected=userInfo$affiliation),
+          selectInput("location", "Location", choices=c("Amsterdam", "Leiden", "Maastricht", "Nijmegen", "Tilburg", "Utrecht"), selected=userInfo$location),
+          footer = tagList(modalButton("Cancel"), actionButton(actionButtonName, "Submit")))
+        )
+    }
     
     observeEvent(input$buttonDelete,{
       userInfo <- queryUserInfo(value$current)
@@ -403,12 +415,13 @@ function(input, output, session) {
     })
     
     
-    ### SQL Lite database
-    loadData <- function() {
+    ### SQL Lite database transactions ###
+    userExists <- function(name, email){
       con <- dbConnect(SQLite(), sql_fname)
-      data <- dbGetQuery(con, "SELECT rowid, * FROM skillshare")
+      data <- dbGetQuery(con, sprintf("SELECT EXISTS(SELECT 1 FROM skillshare WHERE name='%s' AND email='%s');", name, email))
       dbDisconnect(con)
-      data
+      as.logical(data)
+    
     }
     
     queryUserInfo <- function(user_id) {
@@ -436,7 +449,6 @@ function(input, output, session) {
     
     editData <- function(values, user_id){
       query <- sprintf("UPDATE skillshare SET %s WHERE rowid = %s", values, user_id)
-      #print(query)
       sql_db <- dbConnect(SQLite(), sql_fname)
       dbExecute(sql_db, query)
       dbDisconnect(sql_db)

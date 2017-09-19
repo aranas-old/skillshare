@@ -4,12 +4,6 @@ library(DT)
 library(plotly)
 require(visNetwork, quietly = TRUE)
 
-labelMandatory <- function(label) {
-  tagList(
-    label,
-    span("*", class = "mandatory_star")
-  )
-}
 
 css <- ".mandatory_star { color: red; }
         .shiny-output-error { visibility: hidden; }
@@ -55,8 +49,9 @@ shinyUI(fluidPage(
                                             tags$ul(
                                               tags$li('Click on a Node in the network to learn more about a person or use the details button in the table.'),
                                               tags$li('Hover over the arrows to explore how people help each other.'),
-                                              tags$li('To add your data click on Join us!'),
-                                              tags$li('To edit your data, go to the detailed view and then click on Edit.'))
+                                              tags$li('To add your data click here:'),
+                                              actionButton("buttonAdd", "Add your Data"),
+                                              tags$li('To edit your data, go to the detailed view and click on "Edit".'))
                         )))),
              column(6,bsCollapse(id = "collapsejoin", open = "NULL",
                                  bsCollapsePanel("Join us!",
@@ -65,22 +60,7 @@ shinyUI(fluidPage(
                                                  tags$p("By filling in your skills you can give back to our PhD community and open possibilities for more interaction across institutes and disciplines."),
                                                  tags$p("Please also make sure to fill in some of your own needs. It may be that people do not even know they posses a skill that could be helpful to others.")
                                                 ),
-                                                actionButton("buttonAdd", "Add your Data"),
-                                                bsModal("modaladd", "Add data", "buttonAdd",
-                                                         HTML("Please fill in this form and press submit"),
-                                                         textInput("name", labelMandatory("Name"), ""),
-                                                         textInput("email", labelMandatory("Email"), ""),
-                                                         uiOutput("skillsSelector"),
-                                                         textInput("newskill","New keyword describing your skill:"),
-                                                         textInput("skillsDetail", "Skill in detail", ""),
-                                                         uiOutput("needsSelector"),
-                                                         textInput("newneed","New keyword describing your need:"),
-                                                         textInput("needsDetail", "Need in detail", ""),
-                                                         selectInput("cohort", "Cohort", choices=c(2014:2017)),
-                                                         selectInput("affiliation", "(Primary) affiliation", choices=c("LiI", "IMPRS")),
-                                                         selectInput("location", "Location", selected="Nijmegen",
-                                                                     choices=c("Amsterdam", "Leiden", "Maastricht", "Nijmegen", "Tilburg", "Utrecht")),
-                                                         actionButton("submit", "Submit"))
+                                                actionButton("buttonAdd", "Add your Data")
                                                 )))),
              visNetworkOutput("network")),
       column(6,
