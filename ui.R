@@ -76,6 +76,10 @@ shinyUI(fluidPage(
                                                          uiOutput("needsSelector"),
                                                          textInput("newneed","New keyword describing your need:"),
                                                          textInput("needsDetail", "Need in detail", ""),
+                                                         selectInput("cohort", "Cohort", choices=c(2014:2017)),
+                                                         selectInput("affiliation", "(Primary) affiliation", choices=c("LiI", "IMPRS")),
+                                                         selectInput("location", "Location", selected="Nijmegen",
+                                                                     choices=c("Amsterdam", "Leiden", "Maastricht", "Nijmegen", "Tilburg", "Utrecht")),
                                                          actionButton("submit", "Submit"))
                                                 )))),
              visNetworkOutput("network")),

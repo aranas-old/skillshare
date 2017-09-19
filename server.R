@@ -31,7 +31,7 @@ function(input, output, session) {
     ### Add form #####
     formData <- reactive({
       data = sapply(fields, function(x) input[[x]])  # Aggregate all form data
-      
+      print(data)
       #if new keyword was entered concat with skills
       if(data$newskill != ""){
         data$skills = c(data$skills,string_to_list(data$newskill))
@@ -387,9 +387,9 @@ function(input, output, session) {
                     selectize = TRUE, width = NULL, size = NULL),
         textInput("newneed_edit","New keyword describing your need:"),
         textInput("needsDetail", "(Optional) comments on needs",value = userInfo$needsDetail),
-        selectInput("cohort", "Cohort", choices=c(2014:2017)),
-        selectInput("affiliation", "(Primary) affiliation", choices=c("LiI", "IMPRS")),
-        selectInput("location", "Location", choices=c("Amsterdam", "Leiden", "Maastricht", "Nijmegen", "Tilburg", "Utrecht"), selected="Nijmegen"),
+        selectInput("cohort", "Cohort", choices=c(2014:2017), selected=userInfo$cohort),
+        selectInput("affiliation", "(Primary) affiliation", choices=c("LiI", "IMPRS"), selected=userInfo$affiliation),
+        selectInput("location", "Location", choices=c("Amsterdam", "Leiden", "Maastricht", "Nijmegen", "Tilburg", "Utrecht"), selected=userInfo$location),
         footer = tagList(modalButton("Cancel"), actionButton("submitEdit", "Submit")))
       )
     })
@@ -436,6 +436,7 @@ function(input, output, session) {
     
     editData <- function(values, user_id){
       query <- sprintf("UPDATE skillshare SET %s WHERE rowid = %s", values, user_id)
+      #print(query)
       sql_db <- dbConnect(SQLite(), sql_fname)
       dbExecute(sql_db, query)
       dbDisconnect(sql_db)
@@ -446,7 +447,7 @@ function(input, output, session) {
       name = clean_text(data$name)
       skills = clean_list_to_string(data$skills)
       needs = clean_list_to_string(data$needs)
-      query <- sprintf("INSERT INTO skillshare VALUES (CURRENT_TIMESTAMP, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')", 
+      query <- sprintf("INSERT INTO skillshare VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', CURRENT_TIMESTAMP)", 
                        name, trimws(data$email), skills, clean_text(data$skillsDetail), needs, clean_text(data$needsDetail), data$cohort, data$affiliation, data$location
                        )
       sql_db <- dbConnect(SQLite(), sql_fname)
