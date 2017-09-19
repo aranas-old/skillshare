@@ -13,9 +13,9 @@ labelMandatory <- function(label) {
 
 css <- ".mandatory_star { color: red; }
         .shiny-output-error { visibility: hidden; }
-        .shiny-output-error:before {
+        .shiny-output-error::before {
           visibility: visible;
-          content: 'An error occurred. Please contact one of the admins (see 'About' section for their emails).'; }
+          content: 'An error occurred. Please contact one of the admins (see \"About\" section for emails).'; }
         .navbar-header .navbar-brand {padding:0;margin:-20px 0;padding:1px}
         .modal {overflow-y: scroll;}
         .loadmessage {
@@ -68,8 +68,7 @@ shinyUI(fluidPage(
                                                 actionButton("buttonAdd", "Add your Data"),
                                                 bsModal("modaladd", "Add data", "buttonAdd",
                                                          HTML("Please fill in this form and press submit"),
-                                                         textInput("firstName", labelMandatory("First Name"), ""),
-                                                         textInput("lastName", labelMandatory("Last Name"), ""),
+                                                         textInput("name", labelMandatory("Name"), ""),
                                                          textInput("email", labelMandatory("Email"), ""),
                                                          uiOutput("skillsSelector"),
                                                          textInput("newskill","New keyword describing your skill:"),
@@ -77,7 +76,6 @@ shinyUI(fluidPage(
                                                          uiOutput("needsSelector"),
                                                          textInput("newneed","New keyword describing your need:"),
                                                          textInput("needsDetail", "Need in detail", ""),
-                                                         uiOutput("departmentSelector"),
                                                          actionButton("submit", "Submit"))
                                                 )))),
              visNetworkOutput("network")),

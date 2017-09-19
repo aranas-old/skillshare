@@ -57,3 +57,30 @@ for (id in 1:nrow(all_data)){
   dbExecute(sql_db, query)
 }
 dbDisconnect(sql_db)
+
+# Edit table columns
+c("timestamp", "firstName","lastName","email","skills","newskill_edit","newskill","needs","newneed","newneed_edit","needsDetail","skillsDetail",
+  "cohort", "affiliation", "location")
+sql_db <- dbConnect(SQLite(), "db/data.sqlite")
+dbExecute(sql_db, "ALTER TABLE skillshare RENAME TO tttemp_table")
+dbExecute(sql_db, "CREATE TABLE skillshare (name TEXT NOT NULL,
+                                            email TEXT NOT NULL,
+                                            skills TEXT NOT NULL,
+                                            skillsDetail TEXT,
+                                            needs TEXT,
+                                            needsDetail TEXT,
+                                            cohort INT DEFAULT 2015,
+                                            affiliation TEXT DEFAULT 'IMPRS',
+                                            location TEXT DEFAULT 'Nijmegen',
+                                            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+                                            )")
+
+dbExecute(sql_db, "INSERT INTO skillshare (name, email, skills, skillsDetail, needs, needsDetail)
+                      SELECT
+                      firstName ||  ' ' || lastName, email, skills, skillsDetail, needs, needsDetail
+                      FROM
+                      temp_table")
+dbExecute(sql_db, "DROP TABLE tttemp_table")
+dbDisconnect(sql_db)
+
+

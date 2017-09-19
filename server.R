@@ -11,18 +11,22 @@ library(shinyBS)
 require("RSQLite")
 
 ### Set variables #####
-fields <- c("timestamp", "firstName","lastName","email","skills","newskill_edit","newskill","needs","newneed","newneed_edit","needsDetail","skillsDetail","department")
+fields <- c("timestamp", "name","email","skills", "skillsDetail", "newskill_edit","newskill","needs","needsDetail","newneed","newneed_edit",
+            "cohort", "affiliation", "location")
 sql_fname = "db/data.sqlite"
-# partner institutes for Language in Interaction: https://www.languageininteraction.nl/organisation/partners.html. Maybe "departments" is too specific? Should we switch to institute/university?
-# TODO: Check if the list is complete
-departments <- c("Centre for Language Studies (CLS), Radboud University", "Centre for Language and Speech Technology (CLST), Radboud University", "Donders Centre for Cognition (DCC), Donders", "Institute for Logic, Language and Computation (ILLC), University of Amsterdam", "Neurobiology of Language (NB), MPI", "Language and Cognition (LC), MPI", "Language and Genetics (GEN), MPI", "Language Development, MPI", "Psychology of Language (POL), MPI", "Neurogenetics of Vocal Communication Group, MPI", "RadboudUMC", "UMC Utrecht", "Maastricht University", "Tilburg University", "Universitetit Leiden")
-departments <- departments[order(departments)]  # sort alphabetically
 # Create color palette: get all available colors (total: 150 --151 including white)
 col_palts = brewer.pal.info[brewer.pal.info$category != 'seq',]  # Options: div, seq, qual. Get all but sequential ones. 
 color_vector = unique(unlist(mapply(brewer.pal, col_palts$maxcolors, rownames(col_palts))))
 color_vector = color_vector[color_vector != '#FFFFFF']  # remove white
 
 function(input, output, session) {
+  clear_form <- function(){
+    updateTextInput(session, "name", value = "")
+    updateTextInput(session, "email", value = "")
+    updateTextInput(session, "skillsDetail", value = "")
+    updateTextInput(session, "needsDetail", value = "")
+  }
+  
   observe({
     ### Add form #####
     formData <- reactive({
@@ -75,7 +79,7 @@ function(input, output, session) {
        })
     observe({
       # check if all mandatory fields (name, email etc) have a value
-      mandatoryFilled <- vapply(c("firstName", "lastName", "skills", "email"),
+      mandatoryFilled <- vapply(c("name", "skills", "email"),
                                 function(x) {
                                   !is.null(input[[x]]) && input[[x]] != ""
                                 },
@@ -88,26 +92,15 @@ function(input, output, session) {
     observeEvent(input$submit, { # New data: when the Submit button is clicked, save the form data
       toggleModal(session, "modaladd", toggle = "close") # first close the pop-up window
       dataold = loadData()
-      completeName = paste(input$firstName, input$lastName, sep = " ")
-      if(completeName %in% dataold$fullName){
+      if(input$name %in% dataold$name){
         #display error message
         showModal(modalDialog(
           title = "There was a problem with your entry",
-          sprintf("The database already contains an entry for the name you entered: %s ", completeName , "."),
+          sprintf("The database already contains an entry for the name you entered: %s ", input$name , "."),
           "To adapt your entry, select your name in the datatable and click on 'Details / Edit'.",
           footer = modalButton("Ok")))
-        updateTextInput(session, "firstName", value = "")
-        updateTextInput(session, "lastName", value = "")
-        updateTextInput(session, "email", value = "")
-        updateTextInput(session, "skillsDetail", value = "")
-        updateTextInput(session, "needsDetail", value = "")
       } else{
         saveData(formData())
-        updateTextInput(session, "firstName", value = "")
-        updateTextInput(session, "lastName", value = "")
-        updateTextInput(session, "email", value = "")
-        updateTextInput(session, "skillsDetail", value = "")
-        updateTextInput(session, "needsDetail", value = "")
     }})
       
     
@@ -149,11 +142,11 @@ function(input, output, session) {
       input$submit
       input$submitEdit
       input$submitDelete
-      queryBasicData()  # query DB to get fullName, skills & needs
+      queryBasicData()  # query DB to get name, skills & needs
     })
     
     getRowIDs <- reactive({
-      data = getBasicInfo()  # query DB to get fullName, skills & needs
+      data = getBasicInfo()  # query DB to get name, skills & needs
       data$rowid
     })
     
@@ -199,9 +192,6 @@ function(input, output, session) {
     )
     
     #### used in the "Add data" form ####
-    output$departmentSelector <- renderUI({
-      selectInput("department", "Department", choices = departments)
-    })
     output$skillsSelector <- renderUI({
       skills_and_needs <- skillsNeedsUnique()
       selectInput("skills", tagList("Skills", span("*", class = "mandatory_star")), choices = skills_and_needs, multiple = TRUE, selected = NULL)
@@ -235,7 +225,7 @@ function(input, output, session) {
           }
         }
         nodes <- rbind(nodes, data.frame(id = data$rowid[row],
-                                         fullName = data$fullName[row],
+                                         name = data$name[row],
                                          skills = data$skills[row],
                                          needs = data$needs[row],
                                          connection_size = node_connection_size))
@@ -252,7 +242,7 @@ function(input, output, session) {
       nodes$shape <- "dot"
       nodes$shadow <- TRUE # Nodes will drop shadow
       nodes$label <- NULL # Node label
-      nodes$title <- nodes$fullName
+      nodes$title <- nodes$name
       nodes$size <- 12 # I actually like uniformity in the nodes, but if you want to play with the size of the connections then: #nodes$connection_size * 3 (or any other number)
       nodes$font.size <- 0
       #set nodes colors
@@ -361,7 +351,7 @@ function(input, output, session) {
       }
       userInfo <- queryUserInfo(current)
       showModal(modalDialog(
-        title= sprintf("%s (%s)", userInfo$fullName, userInfo$email),
+        title= sprintf("%s (%s)", userInfo$name, userInfo$email),
         renderUI({
           tagList(tags$p(tags$b("Skills: "), userInfo$skills),
                   if (userInfo$skillsDetail != ""){
@@ -372,9 +362,6 @@ function(input, output, session) {
                   },
                   if (userInfo$needsDetail != ""){
                     tags$ul(tags$li(userInfo$needsDetail))
-                  },
-                  if (userInfo$department != ""){
-                    tags$p(tags$b("Department: "), userInfo$department)
                   })
         }),
         footer = modalButton("close"),actionButton("buttonEdit","Make edits"), actionButton("buttonDelete", "Delete data")
@@ -387,15 +374,10 @@ function(input, output, session) {
     observeEvent(input$buttonEdit, {
       skills_and_needs <- skillsNeedsUnique()
       userInfo <- queryUserInfo(value$current)
-      if (!is.null(userInfo$department) &&  userInfo$department %in% departments){  # some of the inserted fields don't exist in the departments list and the app hangs
-        department_value = userInfo$department
-      } else { 
-        department_value = "" 
-      }
       showModal(modalDialog(
-        title = sprintf("Edit Data for: %s", userInfo$fullName),
-        textInput("firstName", "First Name", value = userInfo$firstName), 
-        textInput("lastName", "Last Name", value = userInfo$lastName),
+        title = sprintf("Edit Data for: %s", userInfo$name),
+        textInput("name", "Name", value = userInfo$name), 
+        #textInput("lastName", "Last Name", value = userInfo$lastName),
         textInput("email", "Email", value = userInfo$email),
         selectInput("skills", "Skills", choices = skills_and_needs, selected = string_to_list(userInfo$skills), multiple = TRUE,
                     selectize = TRUE, width = NULL, size = NULL),
@@ -405,7 +387,9 @@ function(input, output, session) {
                     selectize = TRUE, width = NULL, size = NULL),
         textInput("newneed_edit","New keyword describing your need:"),
         textInput("needsDetail", "(Optional) comments on needs",value = userInfo$needsDetail),
-        selectInput("department", "Department", choices = departments, selected = department_value),
+        selectInput("cohort", "Cohort", choices=c(2014:2017)),
+        selectInput("affiliation", "(Primary) affiliation", choices=c("LiI", "IMPRS")),
+        selectInput("location", "Location", choices=c("Amsterdam", "Leiden", "Maastricht", "Nijmegen", "Tilburg", "Utrecht"), selected="Nijmegen"),
         footer = tagList(modalButton("Cancel"), actionButton("submitEdit", "Submit")))
       )
     })
@@ -413,7 +397,7 @@ function(input, output, session) {
     observeEvent(input$buttonDelete,{
       userInfo <- queryUserInfo(value$current)
       showModal(modalDialog(
-        title = sprintf("Are you sure you want to delete all data for: %s (%s)", userInfo$fullName, userInfo$email, " ?"),
+        title = sprintf("Are you sure you want to delete all data for: %s (%s)", userInfo$name, userInfo$email, " ?"),
         footer = tagList(modalButton("No, cancel"), actionButton("submitDelete", "Confirm & Delete")))
       )
     })
@@ -436,10 +420,10 @@ function(input, output, session) {
     
     queryBasicData <- function() {
       sql_db <- dbConnect(SQLite(), sql_fname)
-      data <- dbGetQuery(sql_db, "SELECT rowid, fullName, skills, needs FROM skillshare")
+      data <- dbGetQuery(sql_db, "SELECT rowid, name, skills, needs FROM skillshare")
       dbDisconnect(sql_db)
-      colnames(data) <- c("rowid","fullName", "skills", "needs")
-      data <- data[order(data$fullName),]
+      colnames(data) <- c("rowid","name", "skills", "needs")
+      data <- data[order(data$name),]
       rownames(data) <- 1:nrow(data)
       data
     }
@@ -459,13 +443,12 @@ function(input, output, session) {
     
     saveData <- function(data) {
       # Clean data (uppercase etc) before saving
-      firstName = clean_text(data$firstName)
-      lastName = clean_text(data$lastName)
+      name = clean_text(data$name)
       skills = clean_list_to_string(data$skills)
       needs = clean_list_to_string(data$needs)
-      query <- sprintf("INSERT INTO skillshare VALUES (CURRENT_TIMESTAMP, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s %s')", 
-                       firstName, lastName, trimws(data$email), skills, needs, clean_text(data$needsDetail), clean_text(data$skillsDetail), 
-                       clean_text(data$department), firstName, lastName)
+      query <- sprintf("INSERT INTO skillshare VALUES (CURRENT_TIMESTAMP, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')", 
+                       name, trimws(data$email), skills, clean_text(data$skillsDetail), needs, clean_text(data$needsDetail), data$cohort, data$affiliation, data$location
+                       )
       sql_db <- dbConnect(SQLite(), sql_fname)
       dbExecute(sql_db, query)
       dbDisconnect(sql_db)
