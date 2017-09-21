@@ -8,7 +8,6 @@ library(DT)
 require(shiny)
 library(shinyjs)
 library(shinyBS)
-library(plyr)
 require("RSQLite")
 source("sql_transactions.r")
 
@@ -38,7 +37,7 @@ shinyInput <- function(FUN, len, id, ...) {
 }
 
 function(input, output, session) {
-  observe({
+  #observe({
     ### Add form #####
     formData <- reactive({
       data = sapply(fields, function(x) input[[x]])  # Aggregate all form data
@@ -90,7 +89,7 @@ function(input, output, session) {
     
     observeEvent(input$submit, { # New data: when the Submit button is clicked, save the form data
       removeModal() # first close the pop-up window
-      if(userExists(input$name, input$email)){ # display error message if name&email exist in db
+      if(userExists(clean_text(input$name), trimws(input$email))){ # display error message if name&email exist in db
         showModal(modalDialog(
           title = "There was a problem with your entry",
           tags$p("The database already contains an entry for the name you entered:"),
@@ -395,5 +394,5 @@ function(input, output, session) {
         footer = tagList(modalButton("No, cancel"), actionButton("submitDelete", "Confirm & Delete")))
       )
     })
-  })
+  #})
 }

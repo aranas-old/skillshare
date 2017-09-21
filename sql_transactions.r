@@ -17,7 +17,7 @@ isValidEmail <- function(x) {
 sql_fname = "db/data.sqlite"
 userExists <- function(name, email){
   con <- dbConnect(SQLite(), sql_fname)
-  data <- dbGetQuery(con, sprintf("SELECT EXISTS(SELECT 1 FROM skillshare WHERE name='%s' AND email='%s');", name, email))
+  data <- dbGetQuery(con, sprintf("SELECT EXISTS(SELECT 1 FROM skillshare WHERE UPPER(name)=UPPER('%s') AND UPPER(email)=UPPER('%s'));", name, email))
   dbDisconnect(con)
   as.logical(data)
 }
