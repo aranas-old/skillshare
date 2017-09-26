@@ -8,12 +8,13 @@ library(DT)
 require(shiny)
 library(shinyjs)
 library(shinyBS)
+library(shinysky)
 require("RSQLite")
 source("sql_transactions.r")
 
 
 ### Set variables #####
-fields <- c("timestamp", "name","email","skills", "skillsDetail","newskill","needs","needsDetail","newneed","cohort", "affiliation", "location")
+fields <- c("timestamp", "name","email","skills", "skillsDetail","needs","needsDetail","cohort", "affiliation", "location")
 # Create color palette: get all available colors (total: 150 --151 including white)
 col_palts = brewer.pal.info[brewer.pal.info$category != 'seq',]  # Options: div, seq, qual. Get all but sequential ones. 
 color_vector = unique(unlist(mapply(brewer.pal, col_palts$maxcolors, rownames(col_palts))))
@@ -37,46 +38,61 @@ shinyInput <- function(FUN, len, id, ...) {
 }
 
 function(input, output, session) {
-  #observe({
-    ### Add form #####
     formData <- reactive({
-      data = sapply(fields, function(x) input[[x]])  # Aggregate all form data
-      #if new keyword was entered concat with skills
-      if(data$newskill != ""){
-        data$skills = c(data$skills,string_to_list(data$newskill))
-        session$sendCustomMessage(type = "resetEmpty", message = "newskill")
-      }
-      if(data$newneed != ""){
-        data$needs = c(data$needs,string_to_list(data$newneed))
-        session$sendCustomMessage(type = "resetEmpty", message = "newneed")
-      }
-      #get rid of add your own keyword placeholder
-      data$skills = data$skills[!is.element(data$skills,"!Add your own keyword")]
-      data$needs = data$needs[!is.element(data$needs,"!Add your own keyword")]
-      #get rid of newskill/need fields
-      data = data[grep('new',names(data),invert = TRUE)]
+      data = sapply(fields, function(x) input[[x]])  # Aggregate all (edit and add) form data
       data
+      ###if new keyword was entered concat with skills
+      ###if(data$newskill != ""){
+      ###  data$skills = c(data$skills,string_to_list(data$newskill))
+      ###  session$sendCustomMessage(type = "resetEmpty", message = "newskill")
+      ###}
+      ###if(data$newneed != ""){
+      ###  data$needs = c(data$needs,string_to_list(data$newneed))
+      ###  session$sendCustomMessage(type = "resetEmpty", message = "newneed")
+      ###}
+      ###get rid of add your own keyword placeholder
+      ###data$skills = data$skills[!is.element(data$skills,"!Add your own keyword")]
+      ###data$needs = data$needs[!is.element(data$needs,"!Add your own keyword")]
+      ###get rid of newskill/need fields
+      ###data = data[grep('new',names(data),invert = TRUE)]
     })
     
-    observe({
-      input$buttonAdd
-      input$buttonEdit
-      if ((!is.null(input$skills) & ("!Add your own keyword" %in% input$skills)) ){
-        shinyjs::show("newskill")
-        showNotification("A new field for you to enter a new keyword has been added to the form.")
-      } else {
-        shinyjs::hide("newskill")
-      }
-      if ((!is.null(input$needs) && ("!Add your own keyword" %in% input$needs))){
-        shinyjs::show("newneed")
-        showNotification("A new field for you to enter a new keyword has been added to the form.")
-      } else {
-        shinyjs::hide("newneed")
+    # observeEvent(c(input$skills,input$needs),{
+    #     if (input$skills == "!Add your own keyword" || input$needs == "!Add your own keyword"){
+    #         showModal(modalDialog(
+    #                   title = "Add a new keyword",
+    #                   textInput("newKey", "Choose a keyword that best describes your skill/need:",""),
+    #                    footer = tagList(modalButton("Cancel"), actionButton("submitKey", "Submit"))
+    #                   ))
+    #     }
+    # })
+    
+    observe({input$skills
+      keyword_exists = input$skills %in% skillsNeedsUnique()
+      if (any(keyword_exists == FALSE)){
+         # we can add the last element of the vector as a keyword for the dropdown. Otherwise it'll be automatically added when the data's saved.
       }
     })
     
+    # observe({
+    #   input$buttonAdd
+    #   input$buttonEdit
+    #   if ((!is.null(input$skills) & ("!Add your own keyword" %in% input$skills)) ){
+    #     shinyjs::show("newskill")
+    #     showNotification("A new field for you to enter a new keyword has been added to the form.")
+    #   } else {
+    #     shinyjs::hide("newskill")
+    #   }
+    #   if ((!is.null(input$needs) && ("!Add your own keyword" %in% input$needs))){
+    #     shinyjs::show("newneed")
+    #     showNotification("A new field for you to enter a new keyword has been added to the form.")
+    #   } else {
+    #     shinyjs::hide("newneed")
+    #   }
+    # })
+    
     observe({
-      # check if all mandatory fields (name, email etc) have a value
+      # check if all mandatory fields have a value
       mandatoryFilled <- vapply(c("name", "skills", "email"),
                                 function(x) {
                                   !is.null(input[[x]]) && input[[x]] != ""
@@ -133,7 +149,7 @@ function(input, output, session) {
     
     skillsNeedsUnique <- reactive({
       data = getBasicInfo()
-      sort(unique(data_to_list(paste(data$skills, ", ", data$needs,", ","!Add your own keyword"))))  # returns all unique keywords (needs + skills)
+      sort(unique(data_to_list(paste(data$skills, ", ", data$needs))))#,", ","!Add your own keyword"))))  # returns all unique keywords (needs + skills)
     })
     
     getColorPalette <- reactive({
@@ -170,16 +186,6 @@ function(input, output, session) {
         filter = 'top',
         options = list(pagelength = 10, columnDefs = list(list(targets = c(4), searchable = FALSE)))
     )
-    
-    #### used in the "Add data" form ####
-    output$skillsSelector <- renderUI({
-      skills_and_needs <- skillsNeedsUnique()
-      selectInput("skills", tagList("Skills", span("*", class = "mandatory_star")), choices = skills_and_needs, multiple = TRUE, selected = NULL)
-    })
-    output$needsSelector <- renderUI({
-      skills_and_needs <- skillsNeedsUnique()
-      selectInput("needs", "Needs", choices = skills_and_needs, multiple = TRUE)
-    })
 
     #########################
     ##### Network graph #####
@@ -192,7 +198,7 @@ function(input, output, session) {
       skills = strsplit(data$skills, ", ")
       # Go through Needs instead of Skills, they are less
       for (row in 1:nrow(data)){
-        #node_connection_size = 1 # default (arbitrary) connection size. We can use it to determine the size of the node.
+        #node_connection_size = 1 # Count number of connections for each user. We can use it to determine the size of the node.
         current_need <- string_to_list(data$needs[row])
         for (need in current_need) {
           skilled_idx <- grep(need, skills, ignore.case = TRUE)
@@ -223,13 +229,13 @@ function(input, output, session) {
       #### set visual parameters of graph  ####
       nodes$shadow = TRUE
       nodes$title <- nodes$name
-      nodes$size <- 12 # CT: I actually like uniformity in the nodes, but if you want to play with the size of the connections then: #nodes$connection_size * 3 (or any other number)
+      nodes$size <- 12 # CT: I actually like uniformity in the nodes, but if you want to play with the size of the connections: #nodes$connection_size * 3 (or any other number)
       nodes$color.background <- "#4bd8c1"
       nodes$color.border <- "#42b2a0"
       nodes$color.highlight.background <- "#4bd8c1"
       nodes$color.highlight.border <- "#006600"
       #set edge parameters
-      edges$smooth <- FALSE    # should the edges be curved?   -- Chara: I actually like the curved edges and the bouncing effect on loading so I vote for TRUE
+      edges$smooth <- FALSE    # should the edges be curved? -- Chara: I actually like the curved edges and the bouncing effect on loading so I vote for TRUE
       edges$width <- 5 # edge shadow
       visNetwork(nodes, edges) %>%
         visIgraphLayout(layout = "layout_in_circle") %>%
@@ -360,7 +366,6 @@ function(input, output, session) {
     })
     
     dataForm <- function(title, actionButtonName, userInfo){
-        skills_and_needs <- skillsNeedsUnique()
         if (userInfo$skills == "") {
           selected_skills = NULL
           selected_needs = NULL
@@ -372,13 +377,11 @@ function(input, output, session) {
           title = title,
           textInput("name", labelMandatory("Name"), value = userInfo$name), 
           textInput("email", labelMandatory("Email"), value = userInfo$email),
-          selectInput("skills", labelMandatory("Skills"), choices = skills_and_needs, selected = selected_skills, multiple = TRUE,
-                       selectize = TRUE, width = NULL, size = NULL),
-          textInput("newskill","New keyword describing your skill:"),
+          select2Input("skills", tags$b(labelMandatory("Skills: select from list or add a non available keyword and hit enter")), 
+                       choices = skillsNeedsUnique(), selected = selected_skills, multiple = TRUE),
           textInput("skillsDetail", "(Optional) comments on skills", value = userInfo$skillsDetail),
-          selectInput("needs", "Needs", choices = skills_and_needs, selected = selected_needs, multiple = TRUE,
-                       selectize = TRUE, width = NULL, size = NULL),
-          textInput("newneed","New keyword describing your need:"),
+          select2Input("needs", tags$b("Needs: select from list or add a non available keyword and hit enter"), 
+                       choices = skillsNeedsUnique(), selected = selected_needs, multiple = TRUE),
           textInput("needsDetail", "(Optional) comments on needs",value = userInfo$needsDetail),
           selectInput("cohort", "Cohort", choices=c(2014:2017), selected=userInfo$cohort),
           selectInput("affiliation", "(Primary) affiliation", choices=c("LiI", "IMPRS"), selected=userInfo$affiliation),
@@ -394,5 +397,4 @@ function(input, output, session) {
         footer = tagList(modalButton("No, cancel"), actionButton("submitDelete", "Confirm & Delete")))
       )
     })
-  #})
 }

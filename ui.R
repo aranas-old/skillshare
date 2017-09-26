@@ -24,7 +24,16 @@ css <- ".mandatory_star { color: red; }
                color: #000000;
                background-color: '#CCFF66';
                z-index: 105;
-             }
+        }
+        .select2-container {
+            width: 53% !important;
+            margin-bottom: 20px !important;
+        }
+        .btn {
+            color: #333;
+            background-color: #fff;
+            border-color: #ccc;
+        }
        "
 
 shinyUI(fluidPage(
@@ -92,5 +101,4 @@ shinyUI(fluidPage(
     )
  )
 )
-
     
