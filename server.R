@@ -21,73 +21,17 @@ color_vector = unique(unlist(mapply(brewer.pal, col_palts$maxcolors, rownames(co
 color_vector = color_vector[color_vector != '#FFFFFF']  # remove white
 initial_colors = sample(color_vector, 20, replace=TRUE)  # sample 20 colors
 
-labelMandatory <- function(label) {
-  tagList(
-    label,
-    span("*", class = "mandatory_star")
-  )
-}
-
-### "Detail" button ###
-shinyInput <- function(FUN, len, id, ...) {
-  inputs <- character(len)
-  for (i in seq_len(len)) {
-    inputs[i] <- as.character(FUN(paste0(i), ...))
-  }
-  inputs
-}
 
 function(input, output, session) {
     formData <- reactive({
       data = sapply(fields, function(x) input[[x]])  # Aggregate all (edit and add) form data
       data
-      ###if new keyword was entered concat with skills
-      ###if(data$newskill != ""){
-      ###  data$skills = c(data$skills,string_to_list(data$newskill))
-      ###  session$sendCustomMessage(type = "resetEmpty", message = "newskill")
-      ###}
-      ###if(data$newneed != ""){
-      ###  data$needs = c(data$needs,string_to_list(data$newneed))
-      ###  session$sendCustomMessage(type = "resetEmpty", message = "newneed")
-      ###}
-      ###get rid of add your own keyword placeholder
-      ###data$skills = data$skills[!is.element(data$skills,"!Add your own keyword")]
-      ###data$needs = data$needs[!is.element(data$needs,"!Add your own keyword")]
-      ###get rid of newskill/need fields
-      ###data = data[grep('new',names(data),invert = TRUE)]
     })
     
-    # observeEvent(c(input$skills,input$needs),{
-    #     if (input$skills == "!Add your own keyword" || input$needs == "!Add your own keyword"){
-    #         showModal(modalDialog(
-    #                   title = "Add a new keyword",
-    #                   textInput("newKey", "Choose a keyword that best describes your skill/need:",""),
-    #                    footer = tagList(modalButton("Cancel"), actionButton("submitKey", "Submit"))
-    #                   ))
-    #     }
-    # })
-    
-    observe({input$skills
-      keyword_exists = input$skills %in% skillsNeedsUnique()
-      if (any(keyword_exists == FALSE)){
-         # we can add the last element of the vector as a keyword for the dropdown. Otherwise it'll be automatically added when the data's saved.
-      }
-    })
-    
-    # observe({
-    #   input$buttonAdd
-    #   input$buttonEdit
-    #   if ((!is.null(input$skills) & ("!Add your own keyword" %in% input$skills)) ){
-    #     shinyjs::show("newskill")
-    #     showNotification("A new field for you to enter a new keyword has been added to the form.")
-    #   } else {
-    #     shinyjs::hide("newskill")
-    #   }
-    #   if ((!is.null(input$needs) && ("!Add your own keyword" %in% input$needs))){
-    #     shinyjs::show("newneed")
-    #     showNotification("A new field for you to enter a new keyword has been added to the form.")
-    #   } else {
-    #     shinyjs::hide("newneed")
+    # observe({input$skills
+    #   keyword_exists = input$skills %in% skillsNeedsUnique()
+    #   if (any(keyword_exists == FALSE)){
+    #      # we can add the last element of the vector as a keyword for the dropdown. Otherwise it'll be automatically added when the data's saved.
     #   }
     # })
     
@@ -129,7 +73,7 @@ function(input, output, session) {
       changes = c()
       changes = paste(lapply(names(data),function(x) paste0(x," = '",clean_list_to_string(clean_text(data[[x]])),"'")),collapse=",")
       editData(changes, value$current)
-      removeModal()  # close pop-up(s) when submit button is clicked #toggleModal(session, "modaledit", toggle = "close")
+      removeModal()  # close pop-up(s) when submit button is clicked
     })
     
     ### Table #####
@@ -143,13 +87,13 @@ function(input, output, session) {
     })
     
     getRowIDs <- reactive({
-      data = getBasicInfo()  # query DB to get name, skills & needs
+      data = getBasicInfo() # get results from reactive value that communicates with the db
       data$rowid
     })
     
     skillsNeedsUnique <- reactive({
-      data = getBasicInfo()
-      sort(unique(data_to_list(paste(data$skills, ", ", data$needs))))#,", ","!Add your own keyword"))))  # returns all unique keywords (needs + skills)
+      data = getBasicInfo() # get results from reactive value that communicates with the db
+      sort(unique(data_to_list(paste(data$skills, ", ", data$needs)))) # returns all unique keywords (needs + skills)
     })
     
     getColorPalette <- reactive({
@@ -342,7 +286,10 @@ function(input, output, session) {
                   },
                   if (userInfo$needsDetail != ""){
                     tags$ul(tags$li(userInfo$needsDetail))
-                  })
+                  },
+                  tags$p(tags$b("Cohort: "), userInfo$cohort),
+                  tags$p(tags$b("Location: "), userInfo$location),
+                  tags$p(tags$b("(Primary) affiliation: "), userInfo$affiliation))
         }),
         footer = modalButton("close"),actionButton("buttonEdit","Make edits"), actionButton("buttonDelete", "Delete data")
       ))

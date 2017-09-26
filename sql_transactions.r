@@ -13,6 +13,20 @@ isValidEmail <- function(x) {
   grepl("\\<[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}\\>", as.character(x), ignore.case=TRUE)
 }
 
+### helper function that adds a red star to compulsory form fields (e.g., name, e-mail, skills)
+labelMandatory <- function(label) {
+  tagList(label, span("*", class = "mandatory_star"))
+}
+
+### helper function for "Detail" button ###
+shinyInput <- function(FUN, len, id, ...) {
+  inputs <- character(len)
+  for (i in seq_len(len)) {
+    inputs[i] <- as.character(FUN(paste0(i), ...))
+  }
+  inputs
+}
+
 ### SQL Lite database transactions ###
 sql_fname = "db/data.sqlite"
 userExists <- function(name, email){
