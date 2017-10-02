@@ -60,6 +60,7 @@ removeUser <- function(user_id) {
 }
 
 editData <- function(values, user_id){
+  print(values)
   query <- sprintf("UPDATE skillshare SET %s WHERE rowid = %s", values, user_id)
   sql_db <- dbConnect(SQLite(), sql_fname)
   dbExecute(sql_db, query)

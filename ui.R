@@ -37,17 +37,17 @@ css <- ".mandatory_star { color: red; }
        "
 
 shinyUI(fluidPage(
-        useShinyjs(),
-        shinyjs::inlineCSS(css),
-        titlePanel(title=div(img(src="images/combined_logos.png", height=55))),
-        tagList(
-          tags$link(rel="stylesheet",type="text/css"),
-          tags$script("Shiny.addCustomMessageHandler('resetValue', function(variableName) {
-                                            Shiny.onInputChange(variableName, null);});
-                             Shiny.addCustomMessageHandler('resetEmpty', function(variableName) {
-                                            Shiny.onInputChange(variableName, '');});"),
-          tags$style("#network{height:100vh !important;}")
-        ),
+    useShinyjs(),
+    shinyjs::inlineCSS(css),
+    titlePanel(title=div(img(src="images/combined_logos.png", height=55))),
+    tagList(
+      tags$link(rel="stylesheet",type="text/css"),
+      tags$script("Shiny.addCustomMessageHandler('resetValue', function(variableName) {
+                                        Shiny.onInputChange(variableName, null);});
+                         Shiny.addCustomMessageHandler('resetEmpty', function(variableName) {
+                                        Shiny.onInputChange(variableName, '');});"),
+      tags$style("#network{height:100vh !important;}")
+    ),
     fluidRow(
       column(6,
              fluidRow(
@@ -99,6 +99,5 @@ shinyUI(fluidPage(
                        tags$div("Loading...",id="loadmessage")
       )
     )
- )
-)
-    
+ ) # fluidPage
+) # shinyUI

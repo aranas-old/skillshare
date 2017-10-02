@@ -72,6 +72,8 @@ function(input, output, session) {
       data$timestamp = 'CURRENT_TIMESTAMP'
       changes = c()
       changes = paste(lapply(names(data),function(x) paste0(x," = '",clean_list_to_string(clean_text(data[[x]])),"'")),collapse=",")
+      print(changes)
+      print('---')
       editData(changes, value$current)
       removeModal()  # close pop-up(s) when submit button is clicked
     })
