@@ -21,7 +21,6 @@ color_vector = unique(unlist(mapply(brewer.pal, col_palts$maxcolors, rownames(co
 color_vector = color_vector[color_vector != '#FFFFFF']  # remove white
 initial_colors = sample(color_vector, 20, replace=TRUE)  # sample 20 colors
 
-
 function(input, output, session) {
     formData <- reactive({
       data = sapply(fields, function(x) input[[x]])  # Aggregate all (edit and add) form data
@@ -71,9 +70,7 @@ function(input, output, session) {
       data = data[data != ""]
       data$timestamp = 'CURRENT_TIMESTAMP'
       changes = c()
-      changes = paste(lapply(names(data),function(x) paste0(x," = '",clean_list_to_string(clean_text(data[[x]])),"'")),collapse=",")
-      print(changes)
-      print('---')
+      changes = paste(lapply(names(data),function(x) paste0(x," = '", clean_list_to_string(data[[x]]),"'")), collapse=",")
       editData(changes, value$current)
       removeModal()  # close pop-up(s) when submit button is clicked
     })

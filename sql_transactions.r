@@ -1,6 +1,10 @@
 ### helper functions to handle text ###
-clean_text <- function(x){ uppercase_first(trimws(x)) }
 clean_list_to_string <- function(x){ paste(clean_text(x), collapse=", ") }
+clean_text <- function(x){ # don't capitalize e-mails
+  if ('@' %in% x) { x = trimws(x) } 
+  else { x = uppercase_first(trimws(x))}
+  gsub("'", "''", x)  # escape single quotes for SQLlite
+}
 uppercase_first <- function(x){  # uppercase the first letter, it's only for aesthetics
   substr(x, 1, 1) <- toupper(substr(x, 1, 1))
   x
@@ -60,7 +64,6 @@ removeUser <- function(user_id) {
 }
 
 editData <- function(values, user_id){
-  print(values)
   query <- sprintf("UPDATE skillshare SET %s WHERE rowid = %s", values, user_id)
   sql_db <- dbConnect(SQLite(), sql_fname)
   dbExecute(sql_db, query)
