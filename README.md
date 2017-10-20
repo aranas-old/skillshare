@@ -1,4 +1,13 @@
-# skillshare
+# Skillshare app
+
+This project aims to create a knowledge database for PhD students affiliated with the IMPRS and/or Language in Interaction.
+
+
+Before running the app, make sure you have the required libraries installed:
+
+```
+Rstudio install_packages.r
+```
 
 To run the app:
 
@@ -7,13 +16,10 @@ library(shiny)
 runApp()
 ```
 
-Make sure that you have the following libraries installed:
+The prototype can be found here: https://imprs.shinyapps.io/imprs_reciprocity/ 
 
+Login credentials 
 ```
-install.packages(c("shiny", "shinyjs", "shinyBS", "RSQLite", "DT", "visNetwork", "plotly", "igraph", "RColorBrewer", "devtools"))
-devtools::install_github("AnalytixWare/ShinySky")
+username: imprs
+password: sharingiscaring
 ```
-
-Prototype: https://imprs.shinyapps.io/imprs_reciprocity/
-Login: imprs
-Password: sharingiscaring
