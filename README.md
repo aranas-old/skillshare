@@ -11,7 +11,7 @@ Before running the app, make sure you have the required libraries installed:
 Rstudio install_packages.r
 ```
 
-To run the app:
+To run the app locally, either open the project with Rstudio and click on `Run app`, or type the following within R:
 
 ```
 library(shiny)
