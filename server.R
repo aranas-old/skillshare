@@ -97,7 +97,7 @@ function(input, output, session) {
     
     getColorPalette <- reactive({
       skills = unique(skillsKeywords())
-      if (length(skills) > length(initial_colors)){
+      if (length(skills) != length(initial_colors)){
         initial_colors <<- sample(color_vector, length(skills), replace=TRUE)  # update palette
       }
       initial_colors
@@ -178,8 +178,13 @@ function(input, output, session) {
       nodes$color.highlight.background <- "#4bd8c1"
       nodes$color.highlight.border <- "#006600"
       #set edge parameters
-      edges$smooth <- FALSE    # should the edges be curved? -- Chara: I actually like the curved edges and the bouncing effect on loading so I vote for TRUE
-      edges$width <- 5 # edge shadow
+      if (nrow(edges) > 0) {  # make sure there are connections to show
+        edges$smooth <- FALSE    # should the edges be curved? -- Chara: I actually like the curved edges and the bouncing effect on loading so I vote for TRUE
+        edges$width <- 5 # edge shadow
+      } else {  # "edge case" :P -- no edges to show
+        # select random entry id (here:20) and link it to itself
+        edges <- data.frame(from = c(20), to = c(20))
+      }
       visNetwork(nodes, edges) %>%
         visIgraphLayout(layout = "layout_in_circle") %>%
         visOptions(highlightNearest = FALSE) %>%  #nodesIdSelection = TRUE #selectedBy = list(variable = "Skills")
@@ -202,25 +207,27 @@ function(input, output, session) {
       nodes <- graphinfo$nodes
       edges <- graphinfo$edges
       skills = unique(skillsKeywords())
-      colors = data.frame(skills = skills, colors = c(color = getColorPalette()), stringsAsFactors=FALSE) #print(colors$colors) #print(colors$skills)
+      colors = data.frame(skills = skills, colors = c(color = getColorPalette()), stringsAsFactors=FALSE)
       nodes$color.background <- "#4bd8c1"
       nodes$color.border <- "white" # node border color of unselected nodes
-      edges$color <- colors$colors[match(edges$title, colors$skills)]  #color all edges (lines)
-      edges$width <- 5  # edge shadow
-      edges$arrows <- "to"
-      indx = input$database_rows_all  # (filtered) rows on all pages
-      if (!is.null(input$database_rows_selected)){
-        indx = input$database_rows_selected
-        # Gray out non selected edges (those that belong to nodes that have not been selected)
-        rowIDs = getRowIDs()
-        non_selected = intersect(which(edges$from%in%setdiff(edges$from,rowIDs[indx])),which(edges$to%in%setdiff(edges$to,rowIDs[indx])))
-        #edges = edges[!rownames(edges) %in% non_selected,]  # part of the attempt to remove edges instead of "graying them out"
-        #removed_edges = edges[rownames(edges) %in% non_selected,]
-        #visNetworkProxy("network") %>%
-        #    visRemoveEdges(id=rownames(removed_edges))  # visRemoveEdges(removed_edges) didn't seem to work either
-        edges$color[non_selected] <- "fff"
+      if (nrow(edges) > 0) {  # make sure there are connections to show
+        edges$color <- colors$colors[match(edges$title, colors$skills)]  #color all edges (lines)
+        edges$width <- 5  # edge shadow
+        edges$arrows <- "to"
+        indx = input$database_rows_all  # (filtered) rows on all pages
+        if (!is.null(input$database_rows_selected)){
+          indx = input$database_rows_selected
+          # Gray out non selected edges (those that belong to nodes that have not been selected)
+          rowIDs = getRowIDs()
+          non_selected = intersect(which(edges$from%in%setdiff(edges$from,rowIDs[indx])),which(edges$to%in%setdiff(edges$to,rowIDs[indx])))
+          #edges = edges[!rownames(edges) %in% non_selected,]  # part of the attempt to remove edges instead of "graying them out"
+          #removed_edges = edges[rownames(edges) %in% non_selected,]
+          #visNetworkProxy("network") %>%
+          #    visRemoveEdges(id=rownames(removed_edges))  # visRemoveEdges(removed_edges) didn't seem to work either
+          edges$color[non_selected] <- "fff"
+        }
+        nodes$color.border[indx] <- "#42b2a0"  # border color of selected nodes
       }
-      nodes$color.border[indx] <- "#42b2a0"  # border color of selected nodes
       # Update network
       visNetworkProxy("network") %>%
         visUpdateNodes(nodes) %>%
