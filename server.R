@@ -16,10 +16,12 @@ source("sql_transactions.r")
 ### Set variables #####
 fields <- c("timestamp", "name","email","skills", "skillsDetail","needs","needsDetail","cohort", "affiliation", "location")
 # Create color palette: get all available colors (total: 150 --151 including white)
-col_palts = brewer.pal.info[brewer.pal.info$category == 'qual',] #[brewer.pal.info$category != 'seq',]  # Options: div, seq, qual. Get all but sequential ones. 
+col_palts = brewer.pal.info[rownames(brewer.pal.info) == 'Dark2',] #[brewer.pal.info$category == 'qual',] #[brewer.pal.info$category != 'seq',]  # Options: div, seq, qual. Get all but sequential ones. 
 color_vector = unique(unlist(mapply(brewer.pal, col_palts$maxcolors, rownames(col_palts))))
-color_vector = color_vector[color_vector != '#FFFFFF']  # remove white
-initial_colors = sample(color_vector, 20, replace=TRUE)  # sample 20 colors
+print(color_vector)
+initial_colors = sample(color_vector, 8)
+#color_vector = color_vector[color_vector != '#FFFFFF']  # remove white
+#initial_colors = sample(color_vector, 20, replace=TRUE)  # sample 20 colors
 
 function(input, output, session) {
     formData <- reactive({
@@ -88,14 +90,6 @@ function(input, output, session) {
       sort(unique(data_to_list(paste(data$skills, ", ", data$needs)))) # returns all unique keywords (needs + skills)
     })
     
-    getColorPalette <- reactive({
-      skills = unique(skillsKeywords())
-      if (length(skills) != length(initial_colors)){
-        initial_colors <<- sample(color_vector, length(skills), replace=TRUE)  # update palette
-      }
-      initial_colors
-    })
-    
     skillsKeywords <- reactive({
       data = getBasicInfo()
       data_to_list(data$skills)
@@ -104,6 +98,20 @@ function(input, output, session) {
     needsKeywords <- reactive({
       data = getBasicInfo()
       data_to_list(data$needs)
+    })
+    
+    needsInSkillsKeywords <- reactive({
+      needs <- unique(data_to_list(needsKeywords()))
+      skills <- unique(data_to_list(skillsKeywords()))
+      intersect(needs, skills)
+    })
+    
+    getColorPalette <- reactive({
+      needs_in_skills = needsInSkillsKeywords()
+      if (length(needs_in_skills) != length(initial_colors)){
+        initial_colors <<- sample(color_vector, length(needs_in_skills), replace=FALSE)  # update palette
+      }
+      initial_colors
     })
     
     tableInfo <- reactive({
@@ -207,13 +215,13 @@ function(input, output, session) {
       graphinfo <- node_pairs()  # access reactive values
       nodes <- graphinfo$nodes
       edges <- graphinfo$edges
-      skills = unique(skillsKeywords())
-      colors = data.frame(skills = skills, colors = c(color = getColorPalette()), stringsAsFactors=FALSE)
+      needs_in_skills = needsInSkillsKeywords()
+      colors = data.frame(skills = needs_in_skills, colors = c(color = getColorPalette()), stringsAsFactors=FALSE)
       nodes$color.background <- "#4bd8c1"
       nodes$color.border <- "white" # node border color of unselected nodes
       if (nrow(edges) > 0) {  # make sure there are connections to show
         edges$color <- colors$colors[match(edges$title, colors$skills)]  #color all edges (lines)
-        edges$width <- 4  # edge shadow
+        edges$width <- 5  # edge shadow
         edges$arrows <- "to"
         indx = input$database_rows_all  # (filtered) rows on all pages
         if (!is.null(input$database_rows_selected)){
@@ -296,8 +304,8 @@ function(input, output, session) {
                     tags$ul(tags$li(userInfo$needsDetail))
                   },
                   tags$p(tags$b("Cohort: "), userInfo$cohort),
-                  tags$p(tags$b("(Primary) location: "), userInfo$location),
-                  tags$p(tags$b("(Primary) affiliation: "), userInfo$affiliation))
+                  tags$p(tags$b("(Primary) location: "), userInfo$location))
+                  #tags$p(tags$b("(Primary) affiliation: "), userInfo$affiliation))
         }),
         footer = modalButton("close")#,actionButton("buttonEdit","Make edits"), actionButton("buttonDelete", "Delete data")
       ))
