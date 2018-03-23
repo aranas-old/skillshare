@@ -27,13 +27,6 @@ function(input, output, session) {
       data
     })
     
-    # observe({input$skills
-    #   keyword_exists = input$skills %in% skillsNeedsUnique()
-    #   if (any(keyword_exists == FALSE)){
-    #      # we can add the last element of the vector as a keyword for the dropdown. Otherwise it'll be automatically added when the data's saved.
-    #   }
-    # })
-    
     observe({
       # check if all mandatory fields have a value
       mandatoryFilled <- vapply(c("name", "skills", "email"),
@@ -233,8 +226,9 @@ function(input, output, session) {
           #visNetworkProxy("network") %>%
           #    visRemoveEdges(id=rownames(removed_edges))  # visRemoveEdges(removed_edges) didn't seem to work either
           edges$color[non_selected] <- "fff"
+          edges$width[non_selected] <- 5
         }
-        nodes$color.border[indx] <- "#42b2a0"  # border color of selected nodes
+        nodes$color.border[indx] <- "#000" #"#42b2a0"  # border color of selected nodes
       }
       # Update network
       visNetworkProxy("network") %>%

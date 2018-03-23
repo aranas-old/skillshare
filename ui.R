@@ -39,7 +39,7 @@ css <- ".mandatory_star { color: red; }
 shinyUI(fluidPage(
     useShinyjs(),
     shinyjs::inlineCSS(css),
-    titlePanel(title=div(img(src="images/combined_logos.png", height=55))),
+    titlePanel(title=div(img(src="images/skillshare_logo.png", height=55))),
     tagList(
       tags$link(rel="stylesheet",type="text/css"),
       tags$script("Shiny.addCustomMessageHandler('resetValue', function(variableName) {
