@@ -226,7 +226,7 @@ function(input, output, session) {
           #visNetworkProxy("network") %>%
           #    visRemoveEdges(id=rownames(removed_edges))  # visRemoveEdges(removed_edges) didn't seem to work either
           edges$color[non_selected] <- "fff"
-          edges$width[non_selected] <- 5
+          #edges$width[non_selected] <- 5
         }
         nodes$color.border[indx] <- "#000" #"#42b2a0"  # border color of selected nodes
       }
