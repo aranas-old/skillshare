@@ -153,7 +153,7 @@ function(input, output, session) {
             current_need <- list()
         }
         for (need in current_need) {
-          skilled_idx <- grep(need, skills, ignore.case = TRUE)
+          skilled_idx <- grep(sprintf("\\b%s\\b", need), skills, ignore.case = TRUE)
           skilled_idx = skilled_idx[skilled_idx!=row] # just to avoid the "self-help" loops (some people enter same keyword for skills/needs, e.g. "R")
           if (length(skilled_idx) > 0){
             #node_connection_size = node_connection_size + length(skilled_idx)  # increase by connections of current skill

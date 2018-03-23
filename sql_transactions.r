@@ -54,15 +54,12 @@ queryUserInfo <- function(user_id) {
 }
 
 queryBasicData <- function() {
-  print('-----')
   sql_db <- dbConnect(SQLite(), sql_fname)
   data <- dbGetQuery(sql_db, "SELECT rowid, name, skills, needs FROM skillshare")
-  print(data)
-  print('-----')
   dbDisconnect(sql_db)
   colnames(data) <- c("rowid","name", "skills", "needs")
-  #data <- data[order(data$name),]
-  #rownames(data) <- 1:nrow(data)
+  data <- data[order(data$name),]
+  rownames(data) <- 1:nrow(data)
   data
 }
 
