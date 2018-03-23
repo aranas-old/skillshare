@@ -11,7 +11,7 @@ uppercase_first <- function(x){  # uppercase the first letter, it's only for aes
 }
 remove_empty <- function(x){if (!is.null(x)) { x[x != ""] } else x }
 data_to_list <- function(x){remove_empty(trimws(unlist(strsplit(x, ","))))}
-string_to_list <- function(x){remove_empty(trimws(unlist(strsplit(x, ","))))}
+string_to_list <- function(x){ if (length(x) > 0) { remove_empty(trimws(unlist(strsplit(x, ","))))} else { list()} }
 # check the vailidity of the e-mail format:
 isValidEmail <- function(x) {
   grepl("\\<[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}\\>", as.character(x), ignore.case=TRUE)
@@ -32,7 +32,13 @@ shinyInput <- function(FUN, len, id, ...) {
 }
 
 ### SQL Lite database transactions ###
-sql_fname = "db/data.sqlite"
+sql_fname = "db/phd_data.sqlite" #"db/data.sqlite"
+create_db <- function() {
+  con <- dbConnect(SQLite(), sql_fname)
+  dbExecute(con, "CREATE TABLE skillshare (name, email PRIMARY KEY, skills, skillsDetail, needs, needsDetail, cohort, affiliation, location, timestamp TIMESTAMP
+  DEFAULT CURRENT_TIMESTAMP);")
+  dbDisconnect(con)
+}
 userExists <- function(name, email){
   con <- dbConnect(SQLite(), sql_fname)
   data <- dbGetQuery(con, sprintf("SELECT EXISTS(SELECT 1 FROM skillshare WHERE UPPER(name)=UPPER('%s') AND UPPER(email)=UPPER('%s'));", name, email))
@@ -48,12 +54,15 @@ queryUserInfo <- function(user_id) {
 }
 
 queryBasicData <- function() {
+  print('-----')
   sql_db <- dbConnect(SQLite(), sql_fname)
   data <- dbGetQuery(sql_db, "SELECT rowid, name, skills, needs FROM skillshare")
+  print(data)
+  print('-----')
   dbDisconnect(sql_db)
   colnames(data) <- c("rowid","name", "skills", "needs")
-  data <- data[order(data$name),]
-  rownames(data) <- 1:nrow(data)
+  #data <- data[order(data$name),]
+  #rownames(data) <- 1:nrow(data)
   data
 }
 

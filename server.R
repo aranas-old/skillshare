@@ -119,7 +119,8 @@ function(input, output, session) {
       names(df) <- c("Name","Skills","Needs")
       #df$Skills <- as.factor(df$Skills) # disabled at the moment because does not recognize comma-separated keywords
       #df$Needs <- as.factor(df$Needs)
-      data = data.frame(df, Details = shinyInput(actionButton, length(df$Name), 'details', label = "Details / Edit", onclick = 'Shiny.onInputChange(\"details_button\",  this.id)'))
+      # label = "Details / Edit"
+      data = data.frame(df, Details = shinyInput(actionButton, length(df$Name), 'details', label = "Details", onclick = 'Shiny.onInputChange(\"details_button\",  this.id)'))
       })
     
     # Select relevant information to visualize in table
@@ -138,11 +139,19 @@ function(input, output, session) {
       edges <- data.frame()
       nodes <- data.frame()
       data = getBasicInfo()
-      skills = strsplit(data$skills, ", ")
+      if (length(data$skills) > 0) {
+        skills = strsplit(data$skills, ", ")
+      } else {
+        skills = list()
+      }
       # Go through Needs instead of Skills, they are less
       for (row in 1:nrow(data)){
         #node_connection_size = 1 # Count number of connections for each user. We can use it to determine the size of the node.
-        current_need <- string_to_list(data$needs[row])
+        if (length(data$needs) > 0) {
+            current_need <- string_to_list(data$needs[row])
+        } else {
+            current_need <- list()
+        }
         for (need in current_need) {
           skilled_idx <- grep(need, skills, ignore.case = TRUE)
           skilled_idx = skilled_idx[skilled_idx!=row] # just to avoid the "self-help" loops (some people enter same keyword for skills/needs, e.g. "R")
@@ -183,7 +192,7 @@ function(input, output, session) {
         edges$width <- 5 # edge shadow
       } else {  # "edge case" :P -- no edges to show
         # select random entry id (here:20) and link it to itself
-        edges <- data.frame(from = c(20), to = c(20))
+        edges <- data.frame(from = c(1), to = c(1))
       }
       visNetwork(nodes, edges) %>%
         visIgraphLayout(layout = "layout_in_circle") %>%
@@ -294,10 +303,10 @@ function(input, output, session) {
                     tags$ul(tags$li(userInfo$needsDetail))
                   },
                   tags$p(tags$b("Cohort: "), userInfo$cohort),
-                  tags$p(tags$b("Location: "), userInfo$location),
+                  tags$p(tags$b("(Primary) location: "), userInfo$location),
                   tags$p(tags$b("(Primary) affiliation: "), userInfo$affiliation))
         }),
-        footer = modalButton("close"),actionButton("buttonEdit","Make edits"), actionButton("buttonDelete", "Delete data")
+        footer = modalButton("close")#,actionButton("buttonEdit","Make edits"), actionButton("buttonDelete", "Delete data")
       ))
       value$current <- current
       session$sendCustomMessage(type = "resetValue", message = "current_node_id")
@@ -314,7 +323,7 @@ function(input, output, session) {
     observeEvent(input$buttonAdd, {
       title = "Add your data"
       actionButtonName = "submit"
-      userInfo = data.frame(name = "", email = "", skills = "", skillsDetail = "", needs="", needsDetail="", cohort=2017, affiliation="IMPRS", location="Nijmegen")
+      userInfo = data.frame(name = "", email = "", skills = "", skillsDetail = "", needs="", needsDetail="", cohort=2018, affiliation="LiI", location="Nijmegen")
       dataForm(title, actionButtonName, userInfo)
     })
     
@@ -338,7 +347,7 @@ function(input, output, session) {
           textInput("needsDetail", "(Optional) comments on needs",value = userInfo$needsDetail),
           selectInput("cohort", "Cohort", choices=c(2014:2017), selected=userInfo$cohort),
           selectInput("affiliation", "(Primary) affiliation", choices=c("LiI", "IMPRS"), selected=userInfo$affiliation),
-          selectInput("location", "Location", choices=c("Amsterdam", "Leiden", "Maastricht", "Nijmegen", "Tilburg", "Utrecht"), selected=userInfo$location),
+          selectInput("location", "(Primary) location", choices=c("Amsterdam", "Leiden", "Maastricht", "Nijmegen", "Tilburg", "Utrecht"), selected=userInfo$location),
           footer = tagList(modalButton("Cancel"), actionButton(actionButtonName, "Submit")))
         )
     }

@@ -57,18 +57,21 @@ shinyUI(fluidPage(
                                             tags$p('You can explore this database by interacting with both the network graph below or the table to the right.'),
                                             tags$ul(
                                               tags$li('Click on a Node in the network to learn more about a person or use the details button in the table.'),
-                                              tags$li('Hover over the arrows to explore how people help each other.'),
-                                              tags$li('To add your data click on "Join us!".'),
-                                              tags$li('To edit your data, go to the detailed view and click on "Edit".'))
+                                              tags$li('Hover over the arrows to explore how people help each other.')
+                                              #tags$li('To add your data click on "Join us!".'),
+                                              #tags$li('To edit your data, go to the detailed view and click on "Edit".')
+                                            )
                         )))),
              column(6,bsCollapse(id = "collapsejoin", open = "NULL",
                                  bsCollapsePanel("Join us!",
                                                  tags$div(
                                                  tags$h4('Thank you for joining the network!'),
                                                  tags$p("By filling in your skills you can give back to our PhD community and open possibilities for more interaction across institutes and disciplines."),
-                                                 tags$p("Please also make sure to fill in some of your own needs. It may be that people do not even know they posses a skill that could be helpful to others.")
-                                                ),
-                                                actionButton("buttonAdd", "Add your Data")
+                                                 tags$p("Please also make sure to fill in some of your own needs. It may be that people do not even know they posses a skill that 
+                                                        could be helpful to others."),
+                                                 tags$b("To add your data send an e-mail to c.tsoukala@let.ru.nl")
+                                                )#,
+                                                #actionButton("buttonAdd", "Add your Data")
                                                 )))),
              visNetworkOutput("network")),
       column(6,
