@@ -16,7 +16,7 @@ source("sql_transactions.r")
 ### Set variables #####
 fields <- c("timestamp", "name","email","skills", "skillsDetail","needs","needsDetail","cohort", "affiliation", "location")
 # Create color palette: get all available colors (total: 150 --151 including white)
-col_palts = brewer.pal.info[brewer.pal.info$category != 'seq',]  # Options: div, seq, qual. Get all but sequential ones. 
+col_palts = brewer.pal.info[brewer.pal.info$category == 'qual',] #[brewer.pal.info$category != 'seq',]  # Options: div, seq, qual. Get all but sequential ones. 
 color_vector = unique(unlist(mapply(brewer.pal, col_palts$maxcolors, rownames(col_palts))))
 color_vector = color_vector[color_vector != '#FFFFFF']  # remove white
 initial_colors = sample(color_vector, 20, replace=TRUE)  # sample 20 colors
@@ -191,8 +191,7 @@ function(input, output, session) {
         edges$smooth <- FALSE    # should the edges be curved? -- Chara: I actually like the curved edges and the bouncing effect on loading so I vote for TRUE
         edges$width <- 5 # edge shadow
       } else {  # "edge case" :P -- no edges to show
-        # select random entry id (here:20) and link it to itself
-        edges <- data.frame(from = c(1), to = c(1))
+        edges <- data.frame(from = c(1), to = c(1))  # select random entry id (here:1) and link it to itself
       }
       visNetwork(nodes, edges) %>%
         visIgraphLayout(layout = "layout_in_circle") %>%
@@ -221,7 +220,7 @@ function(input, output, session) {
       nodes$color.border <- "white" # node border color of unselected nodes
       if (nrow(edges) > 0) {  # make sure there are connections to show
         edges$color <- colors$colors[match(edges$title, colors$skills)]  #color all edges (lines)
-        edges$width <- 5  # edge shadow
+        edges$width <- 4  # edge shadow
         edges$arrows <- "to"
         indx = input$database_rows_all  # (filtered) rows on all pages
         if (!is.null(input$database_rows_selected)){
