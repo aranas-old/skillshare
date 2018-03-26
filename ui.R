@@ -70,8 +70,7 @@ shinyUI(fluidPage(
                                                  tags$p("Please also make sure to fill in some of your own needs. It may be that people do not even know they posses a skill that 
                                                         could be helpful to others."),
                                                  tags$b("To add your data send an e-mail to c.tsoukala@let.ru.nl")
-                                                )#,
-                                                #actionButton("buttonAdd", "Add your Data")
+                                                )#, actionButton("buttonAdd", "Add your Data")
                                                 )))),
              visNetworkOutput("network")),
       column(6,

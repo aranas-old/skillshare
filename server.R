@@ -18,7 +18,6 @@ fields <- c("timestamp", "name","email","skills", "skillsDetail","needs","needsD
 # Create color palette: get all available colors (total: 150 --151 including white)
 col_palts = brewer.pal.info[rownames(brewer.pal.info) == 'Dark2',] #[brewer.pal.info$category == 'qual',] #[brewer.pal.info$category != 'seq',]  # Options: div, seq, qual. Get all but sequential ones. 
 color_vector = unique(unlist(mapply(brewer.pal, col_palts$maxcolors, rownames(col_palts))))
-print(color_vector)
 initial_colors = sample(color_vector, 8)
 #color_vector = color_vector[color_vector != '#FFFFFF']  # remove white
 #initial_colors = sample(color_vector, 20, replace=TRUE)  # sample 20 colors
