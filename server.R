@@ -345,7 +345,7 @@ function(input, output, session) {
           select2Input("needs", tags$b("Needs: select from list or add a non available keyword and hit enter"), 
                        choices = skillsNeedsUnique(), selected = selected_needs, multiple = TRUE),
           textInput("needsDetail", "(Optional) comments on needs",value = userInfo$needsDetail),
-          selectInput("cohort", "Cohort", choices=c(2014:2017), selected=userInfo$cohort),
+          selectInput("cohort", "Cohort", choices=c(2014:2018), selected=userInfo$cohort),
           selectInput("affiliation", "(Primary) affiliation", choices=c("LiI", "IMPRS"), selected=userInfo$affiliation),
           selectInput("location", "(Primary) location", choices=c("Amsterdam", "Leiden", "Maastricht", "Nijmegen", "Tilburg", "Utrecht"), selected=userInfo$location),
           footer = tagList(modalButton("Cancel"), actionButton(actionButtonName, "Submit")))
